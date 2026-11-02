@@ -242,7 +242,7 @@ body {
 <div id="stickKnob" class="stick" hidden></div>
 <div id="fail" hidden>Oyun yüklenemedi. Sayfayı yenilemeyi dene.</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 (function () {
 'use strict';
@@ -1741,9 +1741,12 @@ function chooseStyle(key, item) {
   $('styleNote').textContent = item.name + ' seçildi.';
   S.style[key] = item.id; applyStyle(); renderStyle(); updateHud(); save();
 }
+function cleanName(v) {
+  if (typeof v !== 'string') return '';
+  return v.replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14).toLocaleUpperCase('tr');
+}
 $('shopName').addEventListener('input', e => {
-  const clean = e.target.value.replace(/\s+/g, ' ').trimStart().slice(0, 14).toLocaleUpperCase('tr');
-  S.style.name = clean.trim() || 'KÖŞE BAKKAL'; applyStyle(); save();
+  S.style.name = cleanName(e.target.value) || 'KÖŞE BAKKAL'; applyStyle(); save();
 });
 $('styleBtn').addEventListener('click', () => { pause(); showPanel('pStyle'); });
 function syncSettings() {
@@ -1808,20 +1811,31 @@ function save() {
   if (noSave) return;
   try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
 }
+/* Kayıt dışarıdan değiştirilebilir: yalnızca geçerli değerler ve oyunda var olan seçenekler yüklenir */
+const clampNum = (v, max) => (Number.isFinite(v) ? Math.min(max, Math.max(0, v)) : 0);
+const asRecord = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 function load() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { d = null; }
-  if (!d) return;
-  S.money = +d.money || 0; S.earned = +d.earned || 0; S.sound = d.sound !== false;
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return;
+  S.money = clampNum(d.money, 1e9); S.earned = clampNum(d.earned, 1e9); S.sound = d.sound !== false;
   if (d.quality === 'low') S.quality = 'low';
-  if (Number.isFinite(d.rep)) S.rep = d.rep;
-  if (d.style) Object.assign(S.style, d.style);
-  if (d.owned) S.owned = d.owned;
-  S.done = !!d.done && PADS.every(p => d.unlocked && d.unlocked[p.id]);
-  PADS.forEach(p => {
-    if (d.unlocked && d.unlocked[p.id]) { S.unlocked[p.id] = true; applyUnlock(p.id, false); }
-    else if (d.paid && d.paid[p.id]) { p.paid = Math.min(d.paid[p.id], p.cost - 1); p.fill.scale.y = p.paid / p.cost; p.fill.position.y = -1.36 + 1.36 * p.paid / p.cost; }
+  if (Number.isFinite(d.rep)) S.rep = clampNum(d.rep, 100);
+  const owned = asRecord(d.owned), style = asRecord(d.style), unlocked = asRecord(d.unlocked), paid = asRecord(d.paid);
+  Object.keys(STYLE).forEach(key => {
+    STYLE[key].items.forEach(item => {
+      const id = key + ':' + item.id;
+      if (item.cost > 0 && owned[id] === true) S.owned[id] = true;
+      if (style[key] === item.id && (item.cost === 0 || S.owned[id])) S.style[key] = item.id;
+    });
   });
+  S.style.name = cleanName(style.name) || S.style.name;
+  /* PADS sırası gereksinim sırasıdır, ön koşulu olmayan açılım yüklenmez */
+  PADS.forEach(p => {
+    if (unlocked[p.id] === true && (p.req || []).every(r => S.unlocked[r])) { S.unlocked[p.id] = true; applyUnlock(p.id, false); }
+    else if (paid[p.id] > 0) { p.paid = clampNum(paid[p.id], p.cost - 1); p.fill.scale.y = p.paid / p.cost; p.fill.position.y = -1.36 + 1.36 * p.paid / p.cost; }
+  });
+  S.done = d.done === true && PADS.every(p => S.unlocked[p.id]);
 }
 addEventListener('pagehide', save);
 document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); pause(); } });
@@ -1930,7 +1944,7 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
-/* Test ve geliştirme için durum */
-window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, PADS, helpers, step, get accountant() { return accountant; } };
+/* Test kancası yalnızca yerel geliştirmede açılır */
+if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, PADS, helpers, step, get accountant() { return accountant; } };
 })();
 </script>
