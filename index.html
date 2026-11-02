@@ -1573,7 +1573,12 @@ load();
 applyQuality();
 syncMainMenu();
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { /* çevrimdışı kullanım isteğe bağlı */ }
+  try {
+    /* Yeni sürüm geldiğinde ana menüdeyse hemen geçer; oyun ortasında bölmez */
+    const updating = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (updating && gameState === 'menu') location.reload(); });
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  } catch (e) { /* çevrimdışı kullanım isteğe bağlı */ }
 }
 if (document.fonts && document.fonts.load) {
   Promise.all([document.fonts.load(`800 40px "Baloo 2"`), document.fonts.ready]).then(() => {

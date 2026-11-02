@@ -1,5 +1,5 @@
 /* Oyunu ilk açılıştan sonra internetsiz de çalıştırır */
-const CACHE = 'kose-bakkal-v2';
+const CACHE = 'kose-bakkal-v3';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
@@ -7,7 +7,11 @@ const CORE = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(CORE.map(url => new Request(url, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -25,7 +29,7 @@ self.addEventListener('fetch', e => {
   /* Oyun sayfası: önce internetten en yeni sürüm, yoksa kayıtlı olan */
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req)
+      fetch(req.url, { cache: 'no-cache' })
         .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put('index.html', copy)); return res; })
         .catch(() => caches.match('index.html'))
     );
