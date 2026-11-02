@@ -1159,6 +1159,7 @@ function tryCollect(e, reach) {
     if (n && n.d < (reach || src.reach)) {
       const it = n.slot.it; n.slot.it = null; n.slot.t = 0;
       it.s = 1; it.cur = 1; e.stack.push(it);
+      if (e === player) markHint('harvest:' + it.type);
       e.collectT = 0.11;
       if (e === player) { sfx(420 + e.stack.length * 40, 0.05); }
       return;
@@ -1176,6 +1177,7 @@ function tryDeposit(e) {
       const it = e.stack.splice(i, 1)[0];
       it.t.copy(sh.slots[sh.items.length]); it.k = 12; it.mesh.rotation.y = 0;
       sh.items.push(it); e.depositT = 0.09;
+      if (e === player) { markHint('stock:' + it.type); markHint('full'); }
       if (e === player) sfx(520, 0.05);
       return;
     }
@@ -1374,6 +1376,7 @@ function updateRegister(dt) {
   addToPile(head.total, V(6.15, 1.4, 3.7));
   S.earned += head.total;
   head.state = 'out'; head.heartT = 1.2; head.exitX = rnd(3, 9); head.mood = 'kalp';
+  markHint('register');
   head.bubble.material.color.set(0xffffff);
   head.path = [V(6.2, 0, 6.9), V(0.9, 0, 7.5), V(0.9, 0, 10.6)];
   changeRep(2);
@@ -1388,13 +1391,14 @@ function updatePile() {
     b.t.set(player.pos.x, 1.3, player.pos.z); b.k = 9 + i % 5; b.arc = 0.2; killItem(b, 0.16 + i * 0.008);
   });
   pile.bills = [];
+  markHint('pile');
   popMoney(); sfx(990, 0.08); sfx(1240, 0.08, 0.06); sfx(1480, 0.1, 0.12);
   save();
 }
 
 /* ---------- Açılacak yerler ---------- */
 const S = {
-  money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false, rep: 70, owned: {},
+  money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false, rep: 70, owned: {}, hints: {},
   style: { floor: 'nane', wall: '#f7e7c6', awning: '#e4472f', uniform: '#1f8a70', name: 'KÖŞE BAKKAL' },
 };
 const PADS = [
@@ -1577,27 +1581,34 @@ const chevGeo = new THREE.BufferGeometry().setFromPoints([V(0, 0, 0.62), V(-0.4,
 chevGeo.setIndex([0, 2, 1]); chevGeo.computeVertexNormals();
 const chevron = new THREE.Mesh(chevGeo, new THREE.MeshBasicMaterial({ color: 0xe4472f, side: THREE.DoubleSide })); scene.add(chevron);
 
+/* Her yönlendirme bir kez gösterilir; iş yapılınca kalıcı olarak kapanır, yeni şeyler kendi yönlendirmesini açar */
+function markHint(key) { S.hints[key] = true; }
 function hintNow() {
-  if (isTouch && !S.walked) return { text: 'Parmağını ekranda sürükleyerek yürü', at: sources.karpuz.center, y: 2 };
-  if (!cashier && queue.length && !nearReg()) return { text: 'Müşteri kasada bekliyor', at: REG, y: 1.4 };
-  if (!accountant && pile.amount > 0 && (pile.amount >= 12 || !padsNow().some(p => S.money >= p.cost - p.paid))) return { text: 'Kasanın yanındaki parayı topla', at: PILE, y: 1.8 };
+  const seen = S.hints;
+  if (isTouch && !seen.walk) return { text: 'Parmağını ekranda sürükleyerek yürü', at: sources.karpuz.center, y: 2 };
+  if (!cashier && !seen.register && queue.length && !nearReg()) return { text: 'Müşteri kasada bekliyor', at: REG, y: 1.4 };
+  if (!accountant && !seen.pile && pile.amount > 0) return { text: 'Kasanın yanındaki parayı topla', at: PILE, y: 1.8 };
   const pad = padsNow().find(p => S.money >= p.cost - p.paid);
   if (pad) return { text: `${pad.name} için kareye bas`, at: V(pad.x, 0, pad.z), y: 0.8 };
-  if (player.stack.length) {
-    const it = player.stack[player.stack.length - 1], sh = shelves[it.type];
-    if (sh.unlocked) return { text: `${PRODUCT[it.type].name} rafa diz`, at: sh.stand, y: 2.6 };
+  for (let i = player.stack.length - 1; i >= 0; i--) {
+    const type = player.stack[i].type, sh = shelves[type];
+    if (sh.unlocked && !seen['stock:' + type]) return { text: `${PRODUCT[type].name} rafa diz`, at: sh.stand, y: 2.6 };
   }
-  const need = openShelves().filter(s => sources[s.type].unlocked).sort((a, b) => a.items.length / a.cap - b.items.length / b.cap)[0];
-  if (player.stack.length >= player.cap) return { text: 'Sepetin dolu, ürünü rafına götür', at: shelves[player.stack[0].type].stand, y: 2.6 };
-  return { text: `${PRODUCT[need.type].name} topla`, at: sources[need.type].center, y: 2 };
+  if (player.stack.length >= player.cap && !seen.full) return { text: 'Sepetin dolu, ürünü rafına götür', at: shelves[player.stack[0].type].stand, y: 2.6 };
+  const fresh = openShelves().find(s => sources[s.type].unlocked && !seen['harvest:' + s.type]);
+  if (fresh) return { text: `${PRODUCT[fresh.type].name} topla`, at: sources[fresh.type].center, y: 2 };
+  return null;
 }
-let hintT = 0, curHint = null, lastHintText = '';
+let hintT = 0, curHint = null, lastHintText = null;
 function updateGuide(dt, time) {
   if ((hintT -= dt) <= 0) {
     hintT = 0.2; curHint = hintNow();
-    if (curHint.text !== lastHintText) { lastHintText = curHint.text; $('hint').textContent = curHint.text; }
+    const text = curHint ? curHint.text : '';
+    if (text !== lastHintText) { lastHintText = text; $('hint').textContent = text; $('hint').hidden = !curHint; }
   }
-  const h = curHint, d = Math.hypot(h.at.x - player.pos.x, h.at.z - player.pos.z);
+  const h = curHint;
+  if (!h) { guide.visible = chevron.visible = false; return; }
+  const d = Math.hypot(h.at.x - player.pos.x, h.at.z - player.pos.z);
   guide.position.set(h.at.x, h.y + 1 + Math.sin(time * 5) * 0.22, h.at.z);
   guide.rotation.y = time * 1.5;
   guide.visible = d > 1.6;
@@ -1650,7 +1661,7 @@ function movePlayer(dt) {
   const wx = cy * ix - sy * iy, wz = -sy * ix - cy * iy;
   player.pos.x += wx * speed * dt; player.pos.z += wz * speed * dt;
   player.face = angleTo(player.face, Math.atan2(wx, wz), Math.min(1, dt * 14));
-  player.moving = true; S.walked = true;
+  player.moving = true; S.walked = true; markHint('walk');
   const R = 0.45;
   solids.forEach(s => {
     const nx = Math.max(s.x0, Math.min(player.pos.x, s.x1)), nz = Math.max(s.z0, Math.min(player.pos.z, s.z1));
@@ -1849,7 +1860,7 @@ const SAVE_KEY = 'kose-bakkal-v1';
 let noSave = false;
 function save() {
   if (noSave) return;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, hints: S.hints, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
 }
 /* Kayıt dışarıdan değiştirilebilir: yalnızca geçerli değerler ve oyunda var olan seçenekler yüklenir */
 const clampNum = (v, max) => (Number.isFinite(v) ? Math.min(max, Math.max(0, v)) : 0);
@@ -1876,6 +1887,13 @@ function load() {
     else if (paid[p.id] > 0) { p.paid = clampNum(paid[p.id], p.cost - 1); p.fill.scale.y = p.paid / p.cost; p.fill.position.y = -1.36 + 1.36 * p.paid / p.cost; }
   });
   S.done = d.done === true && PADS.every(p => S.unlocked[p.id]);
+  if (d.hints && typeof d.hints === 'object' && !Array.isArray(d.hints)) {
+    Object.keys(d.hints).forEach(k => { if (d.hints[k] === true && /^(walk|register|pile|full|(harvest|stock):[a-z]+)$/.test(k)) S.hints[k] = true; });
+  } else if (S.earned > 0) {
+    /* Yönlendirme kaydı olmayan eski oyun: oyuncunun zaten yaptığı işler tekrar gösterilmez */
+    ['walk', 'register', 'pile', 'full'].forEach(markHint);
+    openShelves().forEach(s => { markHint('harvest:' + s.type); markHint('stock:' + s.type); });
+  }
 }
 addEventListener('pagehide', save);
 document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); pause(); } });
