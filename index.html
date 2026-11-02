@@ -40,13 +40,14 @@ body {
 }
 #menu {
   position: fixed; inset: 0; z-index: 5; overflow-y: auto; touch-action: pan-y;
-  display: grid; place-items: center; background: rgba(44, 42, 63, .3);
+  display: flex; background: rgba(44, 42, 63, .3);
   padding-top: calc(16px + env(safe-area-inset-top, 0px));
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-.panel { width: min(340px, 100%); display: grid; gap: 12px; }
+/* margin:auto ile ortalanır; ekrandan uzun panel üstten kesilmeden kaydırılır */
+.panel { width: min(340px, 100%); display: grid; gap: 12px; margin: auto; align-content: start; }
 .logo {
   margin: 0; padding: 10px 14px 4px; text-align: center; font-size: clamp(40px, 13vw, 54px); line-height: 1;
   font-weight: 800; color: var(--paper); background: var(--tomato);
@@ -76,8 +77,11 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: start;
+  grid-template-areas: "stats tools" "hint hint";
 }
-.stats { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.stats { grid-area: stats; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.tools { grid-area: tools; }
+#hint { grid-area: hint; }
 .sticker {
   background: var(--paper); border: 3px solid var(--ink); border-radius: 14px;
   box-shadow: 0 4px 0 var(--ink); padding: 2px 14px; font-weight: 800;
@@ -97,7 +101,7 @@ body {
 .tools button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 .tools button:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
 #hint {
-  grid-column: 1 / -1; justify-self: center; max-width: 100%;
+  justify-self: center; max-width: 100%;
   font-size: 19px; text-align: center; background: var(--ink); color: var(--paper);
   border-color: var(--ink); box-shadow: none; text-wrap: balance;
 }
@@ -122,7 +126,8 @@ body {
 .stick { position: fixed; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); }
 #stickBase { width: 110px; height: 110px; background: rgba(44, 42, 63, .18); border: 3px solid rgba(44, 42, 63, .45); }
 #stickKnob { width: 52px; height: 52px; background: var(--paper); border: 3px solid var(--ink); }
-#menu.stylePanel { place-items: end center; background: transparent; }
+#menu.stylePanel { background: transparent; }
+#menu.stylePanel .panel { margin: auto auto 0; }
 #styleBtn { width: auto; padding: 0 10px; font-size: 15px; background: var(--mustard); }
 .styleCard { text-align: left; padding: 8px 12px; }
 .styleCard h2 { text-align: center; font-size: 22px; }
@@ -145,16 +150,47 @@ body {
 .swatch i { display: block; width: 32px; height: 32px; border: 2px solid var(--ink); border-radius: 50%; }
 .swatch.on { border-color: var(--ink); background: var(--mustard); }
 .swatch:focus-visible { outline: 3px solid var(--tomato); outline-offset: 1px; }
+/* Dik telefon: bilgiler tek sıra, altında ipucu ve düğmeler */
 @media (max-width: 520px) {
-  #money { font-size: 22px; padding: 1px 10px; }
-  #bag, #staff { font-size: 15px; padding: 2px 8px; }
-  #hint { font-size: 16px; }
+  #hud { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "stats stats" "hint tools"; gap: 6px 8px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+  .stats { flex-wrap: nowrap; gap: 6px; }
+  .sticker { border-width: 2px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; }
+  #money { font-size: clamp(18px, 5.8vw, 22px); padding: 0 8px; }
+  #bag, #staff { font-size: clamp(13px, 3.9vw, 15px); padding: 2px 7px; }
+  #hint {
+    justify-self: start; align-self: center; white-space: normal; box-shadow: none; text-align: left;
+    font-size: clamp(14px, 4vw, 16px); line-height: 1.2; padding: 5px 10px;
+  }
+  .tools { gap: 6px; }
+  #toast { white-space: normal; }
+  #rep { font-size: 16px; }
 }
+/* Kısa ekran: menüler taşmadan sığsın */
+@media (max-height: 700px) {
+  .panel { gap: 8px; }
+  .menuBtn { min-height: 46px; font-size: 19px; }
+  .menuBtn.primary { min-height: 54px; font-size: 24px; }
+  .swatch { min-height: 48px; }
+  .swatch i { width: 26px; height: 26px; }
+  .styleCard h2 { font-size: 19px; }
+  .styleGroup { margin-top: 3px; }
+  #shopName { min-height: 40px; }
+}
+/* Yatay telefon */
 @media (max-height: 460px) {
+  #hud { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "stats hint tools"; gap: 8px; padding-top: calc(6px + env(safe-area-inset-top, 0px)); }
+  .stats { flex-wrap: nowrap; gap: 6px; }
+  .sticker { white-space: nowrap; }
+  #money { font-size: 20px; padding: 0 8px; }
+  #bag, #staff { font-size: 14px; padding: 2px 7px; }
+  #hint { font-size: 14px; padding: 3px 10px; white-space: normal; line-height: 1.2; align-self: center; }
+  #rep { font-size: 14px; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
+  #progress { height: 12px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); width: 200px; }
   .panel { width: min(560px, 100%); grid-template-columns: 1fr 1fr; }
   .logo, .card { grid-column: 1 / -1; }
   .logo { font-size: 32px; }
   .menuBtn, .menuBtn.primary { min-height: 46px; font-size: 19px; }
+  #pStyle .menuBtn { grid-column: 1 / -1; }
 }
 #fail { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: var(--sky); font-size: 20px; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 </style>
@@ -295,7 +331,8 @@ scene.background = new THREE.Color(0xa9e3d7);
 const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 150);
 const CAM = V(7.5, 17.5, 14.2);
 const YAW = Math.atan2(CAM.x, CAM.z);
-let camScale = 1;
+let camScale = 1, menuScale = 1;
+const spriteScale = () => (camera.aspect < 1 ? 1.25 : 1);
 
 scene.add(new THREE.HemisphereLight(0xfff6e0, 0x86b083, 0.62));
 const sun = new THREE.DirectionalLight(0xfff0d0, 0.5);
@@ -310,11 +347,14 @@ function resize() {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
-  camScale = camera.aspect < 0.65 ? 1.55 : camera.aspect < 1 ? 1.35 : 1;
+  /* Dik ekranda karakterler büyük kalsın, menü ve önizleme dükkânı bütün göstersin */
+  camScale = camera.aspect < 0.52 ? 1.3 : camera.aspect < 1 ? 1.15 : 1;
+  menuScale = camera.aspect < 0.65 ? 1.75 : camera.aspect < 1 ? 1.4 : 1;
   camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
 addEventListener('orientationchange', () => setTimeout(resize, 250));
+if (window.visualViewport) visualViewport.addEventListener('resize', resize);
 canvas.addEventListener('webglcontextlost', e => e.preventDefault());
 ['gesturestart', 'gesturechange', 'dblclick'].forEach(n => document.addEventListener(n, e => e.preventDefault(), { passive: false }));
 canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
@@ -1148,7 +1188,7 @@ function nameTag(actor, text) {
     g.clearRect(0, 0, w, h); g.fillStyle = '#1f8a70'; roundRect(g, 2, 2, w - 4, h - 4, 20); g.fill();
     g.fillStyle = '#fffaf0'; g.font = `800 36px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2, h / 2 + 3);
   }) }));
-  sp.scale.set(1.6, 0.44, 1); sp.position.y = 2.15; sp.renderOrder = 9; actor.rig.g.add(sp);
+  sp.scale.set(1.6 * spriteScale(), 0.44 * spriteScale(), 1); sp.position.y = 2.15; sp.renderOrder = 9; actor.rig.g.add(sp);
 }
 function addHelper(i) {
   const look = [{ skin: 0xd9a273, cap: 0xf5b92e }, { skin: 0xf2c6a0, cap: 0x36a6c9 }, { skin: 0xa86f48, cap: 0xe4472f }, { skin: 0xf7d9bf, cap: 0xe87fb0 }][i];
@@ -1240,7 +1280,7 @@ function spawnCustomer() {
   c.path = [V(0.3, 0, 10.6), V(0.3, 0, 7.4)];
   c.maxPatience = c.patience = rnd(55, 70) * (1 - 0.45 * stage());
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ depthTest: false, transparent: true }));
-  sp.scale.set(1.5, 1.05, 1); sp.position.y = 2.5; sp.renderOrder = 10; sp.visible = false; c.rig.g.add(sp);
+  sp.scale.set(1.5 * spriteScale(), 1.05 * spriteScale(), 1); sp.position.y = 2.6; sp.renderOrder = 10; sp.visible = false; c.rig.g.add(sp);
   c.bubble = sp; c.bubbleKey = '';
   customers.push(c);
 }
@@ -1920,13 +1960,13 @@ function frame(now) {
   catBody.scale.y = 0.8 + Math.sin(time * 2) * 0.03;
   if (gameState === 'menu') {
     /* Ana menüde kamera dükkânın çevresinde yavaşça döner */
-    const a = 0.5 + Math.sin(time * 0.1) * 0.75, r = 30 * camScale;
-    camTarget.set(Math.sin(a) * r, 19 * camScale, 2 + Math.cos(a) * r);
+    const a = 0.5 + Math.sin(time * 0.1) * 0.75, r = 30 * menuScale;
+    camTarget.set(Math.sin(a) * r, 19 * menuScale, 2 + Math.cos(a) * r);
     wantLook.set(0, 0.6, 2); camK = 1.5;
     guide.visible = chevron.visible = false;
   } else if (stylePreview) {
     /* Özelleştirme ekranında dükkân bütün görünsün */
-    camTarget.copy(CAM).multiplyScalar(camScale * 1.25); camTarget.z += 8; camTarget.y += 2;
+    camTarget.copy(CAM).multiplyScalar(menuScale * 1.25); camTarget.z += 8; camTarget.y += 2;
     wantLook.set(0, 0.6, -1); camK = 3;
   } else {
     camLook.lerp(player.pos, 1 - Math.exp(-6 * dt));
