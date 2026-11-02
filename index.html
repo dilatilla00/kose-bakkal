@@ -107,6 +107,11 @@ body {
   width: min(280px, calc(100% - 64px)); height: 16px;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 10px; overflow: hidden;
 }
+#rep {
+  position: fixed; left: 50%; transform: translateX(-50%); pointer-events: none;
+  bottom: calc(38px + env(safe-area-inset-bottom, 0px));
+  font-size: 17px; padding: 0 10px; color: #c98a00; letter-spacing: .08em; box-shadow: none;
+}
 #progress i { display: block; height: 100%; width: 0; background: var(--leaf); transition: width .3s; }
 #toast {
   position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%);
@@ -169,6 +174,7 @@ body {
         <li>Kasaya geç, müşterinin ödemesini al.</li>
         <li>Masadaki parayı topla.</li>
         <li>Fiyatlı karelere basıp yeni yer aç, çalışan tut.</li>
+        <li>Müşteriyi bekletme: balonu kızarınca sabrı bitiyor. Kızıp giderse yıldızın düşer, yıldızın yüksekse bahşiş alırsın.</li>
       </ol>
     </div>
     <button class="menuBtn primary" type="button" data-back>Tamam</button>
@@ -193,6 +199,7 @@ body {
     <button class="menuBtn primary" type="button" data-back>Tamam</button>
   </div>
 </div>
+<div id="rep" class="sticker" aria-label="Müşteri memnuniyeti" hidden>★★★★☆</div>
 <div id="progress" aria-hidden="true" hidden><i id="progressFill"></i></div>
 <div id="toast" class="sticker" hidden></div>
 <div id="stickBase" class="stick" hidden></div>
@@ -284,6 +291,8 @@ const M = {
   mustard: mat(0xf5b92e), kerb: mat(0xd9d4c8), trunk: mat(0x7b5236),
 };
 
+const glassMat = new THREE.MeshLambertMaterial({ color: 0xbfeaf0, transparent: true, opacity: 0.24, depthWrite: false });
+
 function flat(w, d, material, x, y, z) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), material);
   m.rotation.x = -Math.PI / 2; m.position.set(x, y, z); m.receiveShadow = true; scene.add(m);
@@ -333,7 +342,7 @@ function tree(x, z, s) {
   mesh(new THREE.SphereGeometry(0.95, 10, 8), leafMat, 0.8, 2.1, 0.3, g);
   mesh(new THREE.SphereGeometry(0.85, 10, 8), leafMat, -0.8, 2.2, -0.2, g);
 }
-[[-24, -7, 1.2], [-12, -7.5, 1], [13, -7.5, 1.15], [24, -6, 1], [-26, 7, 1.1], [24, 8, 1.2], [-13, 16, 1.1], [12, 17, 1], [34, 16, 1.2], [-34, 16, 1]]
+[[-24, -7, 1.2], [-12, -7.5, 1], [13, -7.5, 1.15], [33, -6, 1], [-34, 7, 1.1], [24, 9.5, 1.2], [-13, 16, 1.1], [12, 17, 1], [34, 16, 1.2], [-34, 16, 1]]
   .forEach(t => tree(t[0], t[1], t[2]));
 
 /* Arkadaki mahalle evleri */
@@ -358,7 +367,7 @@ const catBody = mesh(new THREE.SphereGeometry(0.42, 12, 10), fur, 0, 0.3, 0, cat
 mesh(new THREE.SphereGeometry(0.25, 12, 10), fur, 0.52, 0.36, 0.1, cat);
 [-0.1, 0.11].forEach(z => { const e = mesh(new THREE.ConeGeometry(0.09, 0.17, 4), fur, 0.54, 0.62, 0.1 + z, cat); e.rotation.z = -0.1; });
 const tail = mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.72, 6), fur, -0.42, 0.12, 0.32, cat); tail.rotation.set(Math.PI / 2, 0, 0.9);
-const mat2 = box(3.4, 0.05, 1.8, M.brick, -0.8, 0.03, 9.2); mat2.castShadow = false;
+const mat2 = box(3.4, 0.05, 1.8, M.brick, 0, 0.06, 10.2); mat2.castShadow = false;
 
 /* ---------- Ürünler ---------- */
 const melonTex = canvasTex(128, 64, (g, w, h) => {
@@ -396,15 +405,40 @@ const BUILD = {
     const g = new THREE.Group(); box(0.46, 0.5, 0.3, mat(0xc99a63), 0, 0, 0, g);
     box(0.48, 0.05, 0.32, mat(0xa97c48), 0, 0.2, 0, g); return g;
   },
+  elma() {
+    const g = new THREE.Group(); const a = mesh(G.elma, mat(0xc9302c), 0, 0, 0, g); a.scale.y = 0.92;
+    mesh(G.twig, M.woodDark, 0, 0.2, 0, g); return g;
+  },
+  simit() {
+    const g = new THREE.Group(); const s = mesh(G.simit, mat(0xc98a3f), 0, 0, 0, g); s.rotation.x = Math.PI / 2;
+    return g;
+  },
+  yumurta() { const e = mesh(G.egg, mat(0xf6e3c5)); e.scale.y = 1.3; return e; },
+  peynir() {
+    const g = new THREE.Group(); box(0.5, 0.28, 0.36, mat(0xfff3c4), 0, 0, 0, g);
+    box(0.51, 0.08, 0.37, mat(0x36a6c9), 0, 0, 0, g); return g;
+  },
 };
-const HEIGHT = { karpuz: 0.56, domates: 0.38, ekmek: 0.32, ayran: 0.5, bill: 0.09, poset: 0.5 };
-const PRODUCT = { karpuz: { name: 'Karpuz', price: 6 }, domates: { name: 'Domates', price: 9 }, ekmek: { name: 'Ekmek', price: 14 }, ayran: { name: 'Ayran', price: 20 } };
+Object.assign(G, {
+  elma: new THREE.SphereGeometry(0.21, 12, 10), twig: new THREE.CylinderGeometry(0.02, 0.02, 0.12, 5),
+  simit: new THREE.TorusGeometry(0.2, 0.08, 8, 16), egg: new THREE.SphereGeometry(0.14, 12, 10),
+});
+const HEIGHT = { karpuz: 0.56, domates: 0.38, ekmek: 0.32, ayran: 0.5, elma: 0.4, simit: 0.2, yumurta: 0.34, peynir: 0.3, bill: 0.09, poset: 0.5 };
+const PRODUCT = {
+  karpuz: { name: 'Karpuz', price: 6 }, domates: { name: 'Domates', price: 9 }, ekmek: { name: 'Ekmek', price: 14 }, ayran: { name: 'Ayran', price: 20 },
+  elma: { name: 'Elma', price: 16 }, simit: { name: 'Simit', price: 22 }, yumurta: { name: 'Yumurta', price: 30 }, peynir: { name: 'Peynir', price: 38 },
+};
 
 function drawIcon(g, type, x, y, r) {
   if (type === 'karpuz') { g.fillStyle = '#2f8a3e'; g.beginPath(); g.ellipse(x, y, r, r * 0.85, 0, 0, 7); g.fill(); g.strokeStyle = '#14592a'; g.lineWidth = r * 0.16; [-0.45, 0, 0.45].forEach(k => { g.beginPath(); g.ellipse(x + k * r * 0.5, y, r * 0.3, r * 0.82, 0, 0, 7); g.stroke(); }); }
   if (type === 'domates') { g.fillStyle = '#e4472f'; g.beginPath(); g.ellipse(x, y + r * 0.1, r * 0.9, r * 0.78, 0, 0, 7); g.fill(); g.fillStyle = '#3f9b5a'; g.beginPath(); g.ellipse(x, y - r * 0.62, r * 0.4, r * 0.17, 0, 0, 7); g.fill(); }
   if (type === 'ekmek') { g.fillStyle = '#db9c52'; g.beginPath(); g.ellipse(x, y, r, r * 0.48, -0.3, 0, 7); g.fill(); g.strokeStyle = '#f5d9a0'; g.lineWidth = r * 0.12; [-0.4, 0, 0.4].forEach(k => { g.beginPath(); g.moveTo(x + k * r - 3, y + r * 0.1); g.lineTo(x + k * r + 7, y - r * 0.25); g.stroke(); }); }
   if (type === 'ayran') { g.fillStyle = '#ffffff'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.45, y - r * 0.7, r * 0.9, r * 1.6, 6); g.fill(); g.stroke(); g.fillStyle = '#36a6c9'; g.fillRect(x - r * 0.5, y - r * 0.92, r, r * 0.3); }
+  if (type === 'elma') { g.fillStyle = '#c9302c'; g.beginPath(); g.ellipse(x, y + r * 0.1, r * 0.85, r * 0.8, 0, 0, 7); g.fill(); g.fillStyle = '#3f9b5a'; g.beginPath(); g.ellipse(x + r * 0.28, y - r * 0.78, r * 0.34, r * 0.15, -0.4, 0, 7); g.fill(); }
+  if (type === 'simit') { g.strokeStyle = '#c98a3f'; g.lineWidth = r * 0.5; g.beginPath(); g.arc(x, y, r * 0.66, 0, 7); g.stroke(); }
+  if (type === 'yumurta') { g.fillStyle = '#f6e3c5'; g.strokeStyle = INK; g.lineWidth = 3; g.beginPath(); g.ellipse(x, y, r * 0.66, r * 0.88, 0, 0, 7); g.fill(); g.stroke(); }
+  if (type === 'peynir') { g.fillStyle = '#fff3c4'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r, y - r * 0.6, r * 2, r * 1.2, 6); g.fill(); g.stroke(); g.fillStyle = '#36a6c9'; g.fillRect(x - r + 2, y - r * 0.16, r * 2 - 4, r * 0.32); }
+  if (type === 'kizgin') { g.fillStyle = '#e4472f'; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.strokeStyle = '#fffaf0'; g.lineWidth = r * 0.18; g.lineCap = 'round'; g.beginPath(); g.moveTo(x - r * 0.6, y - r * 0.5); g.lineTo(x - r * 0.15, y - r * 0.2); g.moveTo(x + r * 0.6, y - r * 0.5); g.lineTo(x + r * 0.15, y - r * 0.2); g.moveTo(x - r * 0.45, y + r * 0.55); g.quadraticCurveTo(x, y + r * 0.1, x + r * 0.45, y + r * 0.55); g.stroke(); }
   if (type === 'kasa') { g.fillStyle = '#7fd089'; g.strokeStyle = '#2f8a3e'; g.lineWidth = 5; roundRect(g, x - r, y - r * 0.6, r * 2, r * 1.2, 7); g.fill(); g.stroke(); g.fillStyle = '#1f6a31'; g.font = `800 ${r * 1.1}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('₺', x, y + 2); }
   if (type === 'kalp') { g.fillStyle = '#e4472f'; g.font = `800 ${r * 2}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('♥', x, y + 3); }
 }
@@ -482,6 +516,26 @@ function moveTo(e, target, speed, dt) {
   e.moving = true;
   return false;
 }
+/* İkinci sıra reyonun içinden geçmemek için koridorları kullanır */
+const AISLES = [-2.6, 5.4], ROW_Z0 = -0.1, ROW_Z1 = 2.1;
+function routed(e, target, speed, dt) {
+  const z = e.pos.z, inRow = z > ROW_Z0 && z < ROW_Z1;
+  const crosses = (z <= ROW_Z0 && target.z >= ROW_Z1) || (z >= ROW_Z1 && target.z <= ROW_Z0);
+  if (inRow && (target.z < ROW_Z0 || target.z > ROW_Z1)) {
+    moveTo(e, V(e.pos.x, 0, target.z > z ? ROW_Z1 + 0.4 : ROW_Z0 - 0.4), speed, dt);
+    return false;
+  }
+  if (crosses) {
+    const t = (1 - z) / (target.z - z), midX = e.pos.x + (target.x - e.pos.x) * t;
+    if (midX > -10.2 && midX < 4.8) {
+      const gx = AISLES.reduce((a, b) => (Math.abs(b - midX) < Math.abs(a - midX) ? b : a));
+      if (Math.abs(e.pos.x - gx) > 0.2) moveTo(e, V(gx, 0, z), speed, dt);
+      else moveTo(e, V(gx, 0, target.z > z ? ROW_Z1 + 0.4 : ROW_Z0 - 0.4), speed, dt);
+      return false;
+    }
+  }
+  return moveTo(e, target, speed, dt);
+}
 function updateActor(e, dt) {
   const r = e.rig;
   r.g.position.set(e.pos.x, 0, e.pos.z);
@@ -547,12 +601,17 @@ function fieldPlot(type, cx, cz, plantColor) {
       l.scale.y = 0.35;
     }
     if (type === 'domates') { const st = mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 5), M.woodDark, x - 0.3, 0.6, z - 0.3, g); st.castShadow = false; }
-    slots.push(V(cx + x, type === 'domates' ? 0.62 : 0.5, cz + z));
+    if (type === 'elma') {
+      mesh(new THREE.CylinderGeometry(0.1, 0.14, 1.1, 7), M.trunk, x, 0.6, z, g);
+      mesh(new THREE.SphereGeometry(0.72, 10, 8), leaf, x, 1.55, z - 0.1, g);
+      slots.push(V(cx + x + 0.36, 1.25, cz + z + 0.56));
+    } else slots.push(V(cx + x, type === 'domates' ? 0.62 : 0.5, cz + z));
   }
-  return addSource(type, g, slots, type === 'karpuz' ? 6 : 5, 1.8, V(cx, 0, cz));
+  return addSource(type, g, slots, { karpuz: 8, domates: 7, elma: 9 }[type], 1.8, V(cx, 0, cz));
 }
 fieldPlot('karpuz', -15.6, -2.2, 0x4aa356);
 fieldPlot('domates', -15.6, 4.2, 0x5fb25a);
+fieldPlot('elma', -25.2, -2.2, 0x62b35a);
 
 function oven() {
   const g = new THREE.Group(); g.visible = false; g.position.set(15, 0, -3.4); scene.add(g);
@@ -562,7 +621,7 @@ function oven() {
   const fire = box(1.4, 0.45, 0.1, new THREE.MeshBasicMaterial({ color: 0xf5912e }), 0, 0.85, 1.24, g); fire.castShadow = false;
   box(5.4, 0.86, 1.1, M.wood, 0, 0.43, 1.9, g);
   const slots = [-2, -1, 0, 1, 2].map(x => V(15 + x, 1.02, -1.5));
-  const s = addSource('ekmek', g, slots, 3.5, 2.2, V(15, 0, -0.5));
+  const s = addSource('ekmek', g, slots, 5, 2.2, V(15, 0, -0.5));
   s.solid = { x0: 12.2, x1: 17.8, z0: -4.8, z1: -0.9 };
 }
 oven();
@@ -574,20 +633,53 @@ function dairy() {
   box(4, 0.4, 0.1, mat(0x36a6c9), 0, 1.9, 1.04, g);
   box(5.4, 0.86, 1.1, M.wood, 0, 0.43, 1.7, g);
   const slots = [-2, -1, 0, 1, 2].map(x => V(15 + x, 1.1, 5.3));
-  const s = addSource('ayran', g, slots, 4.5, 2.2, V(15, 0, 6.3));
+  const s = addSource('ayran', g, slots, 6.5, 2.2, V(15, 0, 6.3));
   s.solid = { x0: 12.2, x1: 17.8, z0: 2.5, z1: 5.9 };
 }
 dairy();
 
-function makeShelf(type, x) {
-  const g = new THREE.Group(); g.visible = false; g.position.set(x, 0, -3.8); scene.add(g);
+/* Simit arabası, kümes ve mandıra */
+function trayStation(type, cx, cz, grow, center, tray, solid) {
+  const g = new THREE.Group(); g.visible = false; g.position.set(cx, 0, cz); scene.add(g);
+  box(5.4, 0.86, 1.1, M.wood, 0, 0.43, tray - cz, g);
+  const slots = [-2, -1, 0, 1, 2].map(x => V(cx + x, 0.86 + HEIGHT[type] * 0.56, tray));
+  const s = addSource(type, g, slots, grow, 2.2, center);
+  s.solid = solid;
+  return g;
+}
+const simitCart = trayStation('simit', -25.2, 3.4, 5.5, V(-25.2, 0, 6.5), 5.4, { x0: -28, x1: -22.4, z0: 2.2, z1: 6 });
+box(4.4, 1, 1.7, M.red, 0, 1, 0, simitCart);
+box(4, 1, 1.3, glassMat, 0, 2, 0, simitCart).castShadow = false;
+box(4.8, 0.14, 2.2, M.mustard, 0, 2.7, 0, simitCart);
+[-1.6, 1.6].forEach(x => { const w = mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.16, 16), M.ink, x, 0.46, 0.92, simitCart); w.rotation.x = Math.PI / 2; });
+
+const coop = trayStation('yumurta', 24, -3.4, 7, V(24, 0, -0.5), -1.5, { x0: 21.2, x1: 26.8, z0: -4.8, z1: -0.9 });
+box(4.6, 1.8, 2.3, M.woodDark, 0, 1.1, 0, coop);
+box(1.1, 0.9, 0.08, M.ink, 0, 0.75, 1.17, coop);
+const coopRoof = mesh(new THREE.ConeGeometry(3.5, 1.5, 4), M.brick, 0, 2.75, 0, coop); coopRoof.rotation.y = Math.PI / 4; coopRoof.scale.z = 0.58;
+const flock = [[20, -2.4], [19.5, 0.4], [20.4, 1.6]].map((p, i) => {
+  const g = new THREE.Group(); g.position.set(p[0], 0, p[1]); g.visible = false; scene.add(g);
+  const b = mesh(new THREE.SphereGeometry(0.28, 10, 8), M.white, 0, 0.32, 0, g); b.scale.set(1.2, 1, 1);
+  mesh(new THREE.SphereGeometry(0.15, 8, 6), M.white, 0.3, 0.56, 0, g);
+  mesh(new THREE.SphereGeometry(0.07, 6, 5), M.red, 0.3, 0.72, 0, g);
+  const beak = mesh(new THREE.ConeGeometry(0.05, 0.12, 5), M.mustard, 0.46, 0.55, 0, g); beak.rotation.z = -Math.PI / 2;
+  return { g, p, i };
+});
+
+const creamery = trayStation('peynir', 24, 3.6, 8, V(24, 0, 6.3), 5.3, { x0: 21.2, x1: 26.8, z0: 2.5, z1: 5.9 });
+box(4.6, 2.4, 2, mat(0xf7e7c6), 0, 1.2, 0, creamery);
+box(4.8, 0.26, 2.3, mat(0x36a6c9), 0, 2.5, 0, creamery);
+mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.42, 18), mat(0xfff3c4), 0, 2.84, 0, creamery);
+
+function makeShelf(type, x, sz) {
+  const g = new THREE.Group(); g.visible = false; g.position.set(x, 0, sz); scene.add(g);
   /* Basamaklı reyon: üstten bakınca iki sıra da görünür */
   box(3.2, 1.9, 0.12, M.woodDark, 0, 0.95, -0.68, g);
   box(3.2, 0.5, 0.7, M.wood, 0, 0.25, 0.35, g);
   box(3.2, 1, 0.7, M.woodDark, 0, 0.5, -0.32, g);
   const slots = [];
   [0, 1].forEach(layer => [[0.35, 0.5], [-0.32, 1]].forEach(row => [-1, 0, 1].forEach(c => {
-    slots.push(V(x + c * 0.92, row[1] + HEIGHT[type] * (0.56 + layer), -3.8 + row[0]));
+    slots.push(V(x + c * 0.92, row[1] + HEIGHT[type] * (0.56 + layer), sz + row[0]));
   })));
   /* Fiyat etiketi */
   const tag = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.4), new THREE.MeshBasicMaterial({ map: canvasTex(192, 52, (c, w, h) => {
@@ -595,9 +687,11 @@ function makeShelf(type, x) {
     c.fillText(`${PRODUCT[type].name} ₺${PRODUCT[type].price}`, w / 2, h / 2 + 2);
   }) }));
   tag.position.set(0, 0.26, 0.72); g.add(tag);
-  return shelves[type] = { type, group: g, x, slots, items: [], cap: slots.length, stand: V(x, 0, -2.3), unlocked: false, solid: { x0: x - 1.65, x1: x + 1.65, z0: -4.8, z1: -3.05 } };
+  return shelves[type] = { type, group: g, x, slots, items: [], cap: slots.length, stand: V(x, 0, sz + 1.5), unlocked: false, solid: { x0: x - 1.65, x1: x + 1.65, z0: sz - 0.8, z1: sz + 0.75 } };
 }
-makeShelf('karpuz', -6); makeShelf('domates', -2); makeShelf('ekmek', 2); makeShelf('ayran', 6);
+makeShelf('karpuz', -6, -3.8); makeShelf('domates', -2, -3.8); makeShelf('ekmek', 2, -3.8); makeShelf('ayran', 6, -3.8);
+/* İkinci sıra reyon; arasında ve sağında geçiş koridoru var */
+makeShelf('elma', -8.4, 1); makeShelf('simit', -5, 1); makeShelf('yumurta', -0.2, 1); makeShelf('peynir', 3, 1);
 
 /* Kasa */
 const REG = V(4.9, 0, 2.7);
@@ -694,7 +788,7 @@ const veresiye = canvasTex(320, 240, (g, w, h) => {
   g.fillStyle = '#fffaf0'; g.fillRect(0, 0, w, h);
   g.strokeStyle = '#2c2a3f'; g.lineWidth = 12; g.strokeRect(6, 6, w - 12, h - 12);
   g.fillStyle = '#2c2a3f'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.font = `800 58px ${FONT}`; g.fillText('Bugün para', w / 2, 82);
+  g.font = `800 46px ${FONT}`; g.fillText('Bugün para', w / 2, 82);
   g.fillStyle = '#c23520'; g.fillText('yarın veresiye', w / 2, 158);
 });
 const verPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.75, 1.3), new THREE.MeshLambertMaterial({ map: veresiye }));
@@ -746,8 +840,82 @@ for (let i = 1; i < 16; i++) {
 const matWord = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.2), new THREE.MeshBasicMaterial({ transparent: true, map: canvasTex(320, 120, (g, w, h) => {
   g.fillStyle = '#fffaf0'; g.font = `800 50px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Hoş geldiniz', w / 2, h / 2 + 3);
 }) }));
-matWord.rotation.x = -Math.PI / 2; matWord.position.set(-2.1, 0.07, 9.2); scene.add(matWord);
-cat.position.x = -3.2;
+matWord.rotation.x = -Math.PI / 2; matWord.position.set(0, 0.1, 10.2); scene.add(matWord);
+cat.position.set(-3.4, 0.05, 10.3);
+
+/* Market girişi: cam cephe, otomatik sürgülü kapı, kapı üstü tabela ve saçak */
+const FRONT_Z = 8.9;
+const frameMat = mat(0x34394f);
+function glassPanel(cx, width, cz, alongZ) {
+  const w = alongZ ? 0.06 : width, d = alongZ ? width : 0.06;
+  const pane = box(w, 2.5, d, glassMat, cx, 1.8, cz); pane.castShadow = false;
+  box(alongZ ? 0.3 : width, 0.55, alongZ ? width : 0.3, M.brick, cx, 0.3, cz);
+  box(alongZ ? 0.38 : width, 0.07, alongZ ? width : 0.38, M.kerb, cx, 0.6, cz);
+}
+[-1, 1].forEach(side => {
+  const cx = side * 5.95;
+  glassPanel(cx, 8.7, FRONT_Z, false);
+  for (let i = 0; i < 5; i++) box(0.14, 2.6, 0.16, frameMat, side * (1.72 + i * 2.12), 1.8, FRONT_Z);
+  glassPanel(side * 10.25, 2.8, 7.5, true);
+  box(0.16, 2.6, 0.16, frameMat, side * 10.25, 1.8, 6.1);
+  solids.push({ x0: Math.min(side * 1.6, side * 10.4), x1: Math.max(side * 1.6, side * 10.4), z0: FRONT_Z - 0.2, z1: FRONT_Z + 0.2 });
+  solids.push({ x0: side * 10.25 - 0.2, x1: side * 10.25 + 0.2, z0: 6.1, z1: 8.9 });
+
+  /* Saksılar */
+  box(1, 0.6, 0.7, M.woodDark, side * 2.8, 0.3, 9.85);
+  [-0.28, 0.28].forEach(dx => mesh(new THREE.SphereGeometry(0.34, 10, 8), M.leaf, side * 2.8 + dx, 0.82, 9.85));
+  solids.push({ x0: side * 2.8 - 0.55, x1: side * 2.8 + 0.55, z0: 9.45, z1: 10.25 });
+
+  /* Duvar lambası */
+  box(0.5, 0.06, 0.34, frameMat, side * 1.95, 2.85, 9.1);
+  mesh(new THREE.SphereGeometry(0.13, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffe7a0 }), side * 1.95, 2.7, 9.2).castShadow = false;
+});
+box(20.8, 0.34, 0.26, frameMat, 0, 3.2, FRONT_Z);
+box(20.8, 0.08, 0.3, M.mustard, 0, 3.02, FRONT_Z);
+[-1.6, 1.6].forEach(x => box(0.2, 3.1, 0.24, frameMat, x, 1.55, FRONT_Z));
+box(3.4, 0.08, 0.26, frameMat, 0, 2.86, FRONT_Z);
+const doorRail = box(6.2, 0.05, 0.1, M.steel, 0, 0.03, FRONT_Z); doorRail.castShadow = false;
+
+function doorLeaf(side) {
+  const g = new THREE.Group(); g.position.set(side * 0.78, 0, FRONT_Z - 0.04); scene.add(g);
+  const pane = box(1.44, 2.66, 0.04, glassMat, 0, 1.48, 0, g); pane.castShadow = false;
+  [[1.56, 0.1, 0, 2.82], [1.56, 0.14, 0, 0.14]].forEach(b => box(b[0], b[1], 0.1, frameMat, b[2], b[3], 0, g));
+  [-0.74, 0.74].forEach(x => box(0.1, 2.74, 0.1, frameMat, x, 1.48, 0, g));
+  box(0.05, 0.9, 0.08, M.steel, -side * 0.58, 1.3, 0.08, g);
+  return g;
+}
+const doorL = doorLeaf(-1), doorR = doorLeaf(1);
+const openTag = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.34), new THREE.MeshBasicMaterial({ map: canvasTex(132, 68, (g, w, h) => {
+  g.fillStyle = '#1f8a70'; roundRect(g, 2, 2, w - 4, h - 4, 10); g.fill();
+  g.fillStyle = '#fffaf0'; g.font = `800 40px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('AÇIK', w / 2, h / 2 + 3);
+}) }));
+openTag.position.set(0.06, 1.95, 0.05); doorR.add(openTag);
+const welcome = canvasTex(512, 96, (g, w, h) => {
+  g.fillStyle = '#34394f'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#ffe7a0'; g.font = `800 58px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('HOŞ GELDİNİZ', w / 2, h / 2 + 4);
+});
+const welcomeSign = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.42), new THREE.MeshBasicMaterial({ map: welcome }));
+welcomeSign.position.set(0, 3.2, FRONT_Z + 0.14); scene.add(welcomeSign);
+for (let i = 0; i < 6; i++) {
+  const a = box(0.8, 0.1, 1.2, i % 2 ? M.white : M.red, -2 + i * 0.8, 3.1, FRONT_Z + 0.68);
+  a.rotation.x = 0.38;
+}
+[[-5.95, 'Taze sebze meyve'], [5.95, 'Fırından sıcak ekmek']].forEach(t => {
+  const decal = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 0.68), new THREE.MeshBasicMaterial({ transparent: true, map: canvasTex(640, 80, (g, w, h) => {
+    g.clearRect(0, 0, w, h); g.fillStyle = '#c23520'; g.font = `800 62px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t[1], w / 2, h / 2 + 4);
+  }) }));
+  decal.position.set(t[0], 2.55, FRONT_Z + 0.05); scene.add(decal);
+});
+let doorOpen = 0, doorWasOpen = false;
+function updateDoors(dt) {
+  const near = e => Math.hypot(e.pos.x, e.pos.z - FRONT_Z) < 3;
+  const wanted = near(player) || customers.some(near) || helpers.some(near);
+  if (wanted && !doorWasOpen && Math.hypot(player.pos.x, player.pos.z - FRONT_Z) < 22) { sfx(1560, 0.14); sfx(1170, 0.2, 0.11); }
+  doorWasOpen = wanted;
+  doorOpen += ((wanted ? 1 : 0) - doorOpen) * Math.min(1, dt * 9);
+  doorL.position.x = -0.78 - doorOpen * 1.46;
+  doorR.position.x = 0.78 + doorOpen * 1.46;
+}
 
 /* Muhasebecinin çelik kasası */
 const safeGroup = new THREE.Group(); safeGroup.visible = false; safeGroup.position.set(9, 0, -3.95); scene.add(safeGroup);
@@ -778,7 +946,7 @@ function addToPile(amount, from) {
 }
 
 /* ---------- Oyuncu ve yardımcılar ---------- */
-const player = newActor({ body: 0x2c6fbb, skin: 0xf2c6a0, apron: true, mustache: true, cap: 0x2c2a3f }, V(-8, 0, 0), 5);
+const player = newActor({ body: 0x2c6fbb, skin: 0xf2c6a0, apron: true, mustache: true, cap: 0x2c2a3f }, V(-8, 0, -1.2), 4);
 const LOOKS = [[0xe4472f, 0x5a3825], [0x8b5fbf, 0x2c2a3f], [0xf5912e, 0xb9804a], [0x36a6c9, 0x2c2a3f], [0xe87fb0, 0x8a5a33], [0x5fb25a, 0xd9d4c8], [0xf5b92e, 0x5a3825]];
 const SKINS = [0xf2c6a0, 0xd9a273, 0xa86f48, 0xf7d9bf];
 let speed = 7;
@@ -826,7 +994,8 @@ function nameTag(actor, text) {
   sp.scale.set(1.6, 0.44, 1); sp.position.y = 2.15; sp.renderOrder = 9; actor.rig.g.add(sp);
 }
 function addHelper(i) {
-  const h = newActor(Object.assign({}, STAFF, i ? { skin: 0xf2c6a0, cap: 0x36a6c9 } : { skin: 0xd9a273, cap: 0xf5b92e }), V(-8.5 + i * 2, 0, 0.5), 4);
+  const look = [{ skin: 0xd9a273, cap: 0xf5b92e }, { skin: 0xf2c6a0, cap: 0x36a6c9 }, { skin: 0xa86f48, cap: 0xe4472f }][i];
+  const h = newActor(Object.assign({}, STAFF, look), V(-8.5 + i * 1.5, 0, -1.2), 3);
   nameTag(h, 'Toplayıcı');
   h.state = 'pick'; h.shelf = null; helpers.push(h);
 }
@@ -857,15 +1026,15 @@ function helperAI(h, dt) {
     const opts = Object.values(shelves)
       .filter(s => s.unlocked && s.items.length < s.cap && sources[s.type].unlocked && ripeCount(sources[s.type]) > 0)
       .sort((a, b) => a.items.length - b.items.length);
-    if (opts.length) { h.shelf = opts[0]; h.state = 'get'; } else moveTo(h, V(-8.5, 0, 0.5), 4.6, dt);
+    if (opts.length) { h.shelf = opts[0]; h.state = 'get'; } else routed(h, V(-8.5, 0, -1.2), 4.4, dt);
   }
   if (h.state === 'get') {
     const n = nearestRipe(sources[h.shelf.type], h.pos);
     if (h.stack.length >= h.cap || !n) { h.state = h.stack.length ? 'put' : 'pick'; }
-    else { if (n.d > 0.9) moveTo(h, n.slot.pos, 5, dt); else tryCollect(h, 1); }
+    else { if (n.d > 0.9) routed(h, n.slot.pos, 4.6, dt); else tryCollect(h, 1); }
   }
   if (h.state === 'put') {
-    if (moveTo(h, h.shelf.stand, 5, dt)) tryDeposit(h);
+    if (routed(h, h.shelf.stand, 4.6, dt)) tryDeposit(h);
     if (!h.stack.length) h.state = 'pick';
   }
 }
@@ -876,18 +1045,43 @@ let spawnT = 2, adBoost = 1;
 const QUEUE_Z = 5.5;
 const queuePos = i => V(4.3 - i * 1.3, 0, QUEUE_Z);
 function openShelves() { return Object.values(shelves).filter(s => s.unlocked); }
+const stage = () => Math.min(1, S.earned / 6000);
+let rushOn = false, rushT = 60, angryToastT = 0;
+const RUSH_TEXT = ['Okul çıkışı! Kalabalık geliyor', 'Akşam oldu, herkes bakkalda', 'Maç bitti, mahalle dükkâna akın etti'];
+function updateRush(dt) {
+  angryToastT -= dt;
+  if (S.earned < 250 || (rushT -= dt) > 0) return;
+  rushOn = !rushOn;
+  rushT = rushOn ? 18 : rnd(60, 95);
+  if (rushOn) { toast(RUSH_TEXT[Math.floor(Math.random() * RUSH_TEXT.length)], 2000); sfx(520, 0.12); sfx(780, 0.14, 0.1); spawnT = Math.min(spawnT, 0.5); }
+}
+function changeRep(d) { S.rep = Math.max(0, Math.min(100, S.rep + d)); }
+function angryLeave(c) {
+  const i = queue.indexOf(c);
+  if (i >= 0) queue.splice(i, 1);
+  c.stack.forEach(it => killItem(it, 0));
+  c.stack.length = 0;
+  c.bubble.material.color.set(0xffffff);
+  c.state = 'out'; c.mood = 'kizgin'; c.heartT = 2.4; c.exitX = rnd(3, 9);
+  c.path = [V(0.9, 0, 7.5), V(0.9, 0, 10.6)];
+  changeRep(-8); sfx(190, 0.26);
+  if (angryToastT <= 0) { angryToastT = 8; toast('Müşteri bekleyemedi, kızıp gitti', 1500); }
+}
 function spawnCustomer() {
-  const shelvesOpen = openShelves();
+  const shelvesOpen = openShelves().filter(s => sources[s.type].unlocked);
   const pick = shelvesOpen[Math.floor(Math.random() * shelvesOpen.length)];
-  const wants = [{ shelf: pick, n: 1 + Math.floor(Math.random() * 2) }];
-  if (shelvesOpen.length > 1 && Math.random() < 0.45) {
+  const maxN = stage() > 0.15 ? 3 : 2;
+  const wants = [{ shelf: pick, n: 1 + Math.floor(Math.random() * maxN) }];
+  if (shelvesOpen.length > 1 && Math.random() < 0.45 + stage() * 0.3) {
     const other = shelvesOpen.filter(s => s !== pick);
-    wants.push({ shelf: other[Math.floor(Math.random() * other.length)], n: 1 + Math.floor(Math.random() * 2) });
+    wants.push({ shelf: other[Math.floor(Math.random() * other.length)], n: 1 + Math.floor(Math.random() * maxN) });
   }
   const look = LOOKS[Math.floor(Math.random() * LOOKS.length)];
   const c = newActor({ body: look[0], hair: look[1], skin: SKINS[Math.floor(Math.random() * SKINS.length)] }, V(32, 0, rnd(10.6, 13)), 99);
   c.wants = wants; c.state = 'in'; c.takeT = 0.4; c.spot = V(0, 0, 0);
   c.speed = rnd(3.5, 4.3);
+  c.path = [V(0.3, 0, 10.6), V(0.3, 0, 7.4)];
+  c.maxPatience = c.patience = rnd(55, 70) * (1 - 0.45 * stage());
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ depthTest: false, transparent: true }));
   sp.scale.set(1.5, 1.05, 1); sp.position.y = 2.5; sp.renderOrder = 10; sp.visible = false; c.rig.g.add(sp);
   c.bubble = sp; c.bubbleKey = '';
@@ -904,15 +1098,21 @@ function chooseSpot(c) {
   c.spot.set(s.x + rnd(-1.15, 1.15), 0, s.z + rnd(-0.05, 0.55));
 }
 function updateCustomer(c, dt) {
+  /* Sabır: sırası gelip banda ürün koyana kadar azalır, azaldıkça balon kızarır */
+  if ((c.state === 'go' || c.state === 'take' || c.state === 'queue') && !c.belt) {
+    c.patience -= dt;
+    c.bubble.material.color.set(c.patience / c.maxPatience < 0.35 ? 0xff8f7f : 0xffffff);
+    if (c.patience <= 0) { angryLeave(c); return; }
+  }
   if (c.state === 'in') {
     setBubble(c, null);
-    if (moveTo(c, V(1, 0, 9.4), c.speed, dt)) {
-      c.state = 'go'; chooseSpot(c);
-      sfx(1560, 0.16); sfx(1170, 0.22, 0.12); /* kapı zili */
+    if (moveTo(c, c.path[0], c.speed, dt)) {
+      c.path.shift();
+      if (!c.path.length) { c.state = 'go'; chooseSpot(c); }
     }
   } else if (c.state === 'go') {
     setBubble(c, c.wants[0].shelf.type, c.wants[0].n);
-    if (moveTo(c, c.spot, c.speed, dt)) c.state = 'take';
+    if (routed(c, c.spot, c.speed, dt)) c.state = 'take';
   } else if (c.state === 'take') {
     const w = c.wants[0];
     setBubble(c, w.shelf.type, w.n);
@@ -926,12 +1126,17 @@ function updateCustomer(c, dt) {
     }
   } else if (c.state === 'queue') {
     setBubble(c, 'kasa', 0);
-    moveTo(c, queuePos(queue.indexOf(c)), c.speed, dt);
+    routed(c, queuePos(queue.indexOf(c)), c.speed, dt);
     if (queue.length) c.face = queue.indexOf(c) === 0 ? angleTo(c.face, Math.PI, Math.min(1, dt * 8)) : c.face;
-  } else if (c.state === 'out' || c.state === 'out2') {
-    setBubble(c, (c.heartT -= dt) > 0 ? 'kalp' : null, 0);
-    if (c.state === 'out') { if (moveTo(c, V(6.4, 0, 7), c.speed, dt)) c.state = 'out2'; }
-    else if (moveTo(c, V(c.exitX, 0, 11.6), c.speed, dt)) c.state = 'street';
+  } else if (c.state === 'out') {
+    setBubble(c, (c.heartT -= dt) > 0 ? c.mood : null, 0);
+    if (routed(c, c.path[0], c.speed, dt)) {
+      c.path.shift();
+      if (!c.path.length) c.state = 'toStreet';
+    }
+  } else if (c.state === 'toStreet') {
+    setBubble(c, (c.heartT -= dt) > 0 ? c.mood : null, 0);
+    if (moveTo(c, V(c.exitX, 0, 11.6), c.speed, dt)) c.state = 'street';
   } else if (c.state === 'street') {
     if (moveTo(c, V(-36, 0, 11.6), c.speed, dt)) {
       c.stack.forEach(it => killItem(it, 0));
@@ -952,6 +1157,7 @@ function updateRegister(dt) {
   if (!head.belt) {
     head.belt = head.stack.splice(0);
     head.total = head.belt.reduce((sum, it) => sum + PRODUCT[it.type].price, 0);
+    if (S.rep >= 80) head.total = Math.round(head.total * 1.15); /* memnun müşteri bahşiş bırakır */
     const gap = Math.min(0.42, 1.2 / head.belt.length);
     head.belt.forEach((it, i) => { it.t.set(3.4 + i * gap, 1.18 + HEIGHT[it.type] / 2, 4.22); it.k = 9; it.arc = 0.3; });
     setDisplay('₺' + head.total);
@@ -970,7 +1176,10 @@ function updateRegister(dt) {
   head.stack.push(spawnItem('poset', V(4.9, 1.3, 4.6)));
   addToPile(head.total, V(6.15, 1.4, 3.7));
   S.earned += head.total;
-  head.state = 'out'; head.heartT = 1.2; head.exitX = rnd(3, 9);
+  head.state = 'out'; head.heartT = 1.2; head.exitX = rnd(3, 9); head.mood = 'kalp';
+  head.bubble.material.color.set(0xffffff);
+  head.path = [V(6.2, 0, 6.9), V(0.9, 0, 7.5), V(0.9, 0, 10.6)];
+  changeRep(2);
   drawerT = 0.7;
   sfx(880, 0.09); sfx(1320, 0.11, 0.07);
 }
@@ -987,22 +1196,31 @@ function updatePile() {
 }
 
 /* ---------- Açılacak yerler ---------- */
-const S = { money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false };
+const S = { money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false, rep: 70 };
 const PADS = [
-  { id: 'domTarla', name: 'Domates bahçesi', cost: 25, x: -15.6, z: 4.2, minEarned: 1 },
-  { id: 'domRaf', name: 'Domates rafı', cost: 20, x: -2, z: -1.6, req: ['domTarla'] },
-  { id: 'canta', name: 'Geniş sepet', cost: 30, x: -6.5, z: 0.7, req: ['domRaf'] },
-  { id: 'ayakkabi', name: 'Rahat terlik', cost: 40, x: -3.4, z: 0.7, req: ['domRaf'] },
-  { id: 'kasiyer', name: 'Kasiyer tut', cost: 80, x: 1.6, z: 2.3, req: ['domRaf'] },
-  { id: 'cirak', name: 'Toplayıcı tut', cost: 140, x: -3.4, z: 3.6, req: ['kasiyer'] },
-  { id: 'tabela', name: 'Mahalleye ilan', cost: 150, x: -0.4, z: 0.7, req: ['kasiyer'] },
-  { id: 'firin', name: 'Taş fırın', cost: 120, x: 15, z: -2.6, req: ['kasiyer'] },
-  { id: 'ekmekRaf', name: 'Ekmek rafı', cost: 80, x: 2, z: -1.6, req: ['firin'] },
-  { id: 'canta2', name: 'Dev sepet', cost: 120, x: -6.5, z: 3.6, req: ['canta', 'firin'] },
-  { id: 'muhasebe', name: 'Muhasebeci tut', cost: 220, x: 3.4, z: 0, req: ['ekmekRaf', 'cirak'] },
-  { id: 'ayranHane', name: 'Ayran makinesi', cost: 260, x: 15, z: 3.8, req: ['ekmekRaf'] },
-  { id: 'ayranRaf', name: 'Ayran dolabı', cost: 180, x: 6, z: -1.6, req: ['ayranHane'] },
-  { id: 'cirak2', name: 'İkinci toplayıcı', cost: 350, x: -0.4, z: 3.6, req: ['ayranRaf', 'cirak'] },
+  { id: 'domTarla', name: 'Domates bahçesi', cost: 40, x: -15.6, z: 4.2, minEarned: 1 },
+  { id: 'domRaf', name: 'Domates rafı', cost: 35, x: -2, z: -1.6, req: ['domTarla'] },
+  { id: 'canta', name: 'Geniş sepet', cost: 60, x: -8.5, z: 4, req: ['domRaf'] },
+  { id: 'ayakkabi', name: 'Rahat terlik', cost: 80, x: -5.6, z: 4, req: ['domRaf'] },
+  { id: 'kasiyer', name: 'Kasiyer tut', cost: 150, x: 1.6, z: 2.3, req: ['domRaf'] },
+  { id: 'cirak', name: 'Toplayıcı tut', cost: 240, x: 0.2, z: 4, req: ['kasiyer'] },
+  { id: 'tabela', name: 'Mahalleye ilan', cost: 220, x: -2.7, z: 4, req: ['kasiyer'] },
+  { id: 'firin', name: 'Taş fırın', cost: 220, x: 15, z: -2.6, req: ['kasiyer'] },
+  { id: 'ekmekRaf', name: 'Ekmek rafı', cost: 140, x: 2, z: -1.6, req: ['firin'] },
+  { id: 'canta2', name: 'Dev sepet', cost: 220, x: -5.9, z: 7.6, req: ['canta', 'firin'] },
+  { id: 'muhasebe', name: 'Muhasebeci tut', cost: 400, x: 11.4, z: 1, req: ['ekmekRaf', 'cirak'] },
+  { id: 'ayranHane', name: 'Ayran makinesi', cost: 450, x: 15, z: 3.8, req: ['ekmekRaf'] },
+  { id: 'ayranRaf', name: 'Ayran dolabı', cost: 300, x: 6, z: -1.6, req: ['ayranHane'] },
+  { id: 'cirak2', name: 'İkinci toplayıcı', cost: 600, x: 4, z: 7.6, req: ['ayranRaf', 'cirak'] },
+  { id: 'elmaBahce', name: 'Elma bahçesi', cost: 700, x: -25.2, z: -2.2, req: ['ayranRaf'] },
+  { id: 'elmaRaf', name: 'Elma rafı', cost: 450, x: -8.4, z: 1, req: ['elmaBahce'] },
+  { id: 'simitAraba', name: 'Simit arabası', cost: 950, x: -25.2, z: 4.2, req: ['elmaRaf'] },
+  { id: 'simitRaf', name: 'Simit rafı', cost: 600, x: -5, z: 1, req: ['simitAraba'] },
+  { id: 'cirak3', name: 'Üçüncü toplayıcı', cost: 1100, x: -2.6, z: 7.6, req: ['simitRaf', 'cirak2'] },
+  { id: 'kumes', name: 'Tavuk kümesi', cost: 1400, x: 24, z: -2.6, req: ['simitRaf'] },
+  { id: 'yumurtaRaf', name: 'Yumurta rafı', cost: 900, x: -0.2, z: 1, req: ['kumes'] },
+  { id: 'mandira', name: 'Peynir mandırası', cost: 2000, x: 24, z: 3.8, req: ['yumurtaRaf'] },
+  { id: 'peynirRaf', name: 'Peynir dolabı', cost: 1300, x: 3, z: 1, req: ['mandira'] },
 ];
 const pops = [];
 function reveal(group, anim) { group.visible = true; if (anim) pops.push({ o: group, t: 0 }); }
@@ -1034,6 +1252,15 @@ function applyUnlock(id, anim) {
     case 'ayranHane': openSource('ayran', anim); break;
     case 'ayranRaf': openShelf('ayran', anim); break;
     case 'cirak2': addHelper(1); break;
+    case 'cirak3': addHelper(2); break;
+    case 'elmaBahce': openSource('elma', anim); break;
+    case 'elmaRaf': openShelf('elma', anim); break;
+    case 'simitAraba': openSource('simit', anim); break;
+    case 'simitRaf': openShelf('simit', anim); break;
+    case 'kumes': openSource('yumurta', anim); flock.forEach(f => { f.g.visible = true; }); break;
+    case 'yumurtaRaf': openShelf('yumurta', anim); break;
+    case 'mandira': openSource('peynir', anim); break;
+    case 'peynirRaf': openShelf('peynir', anim); break;
   }
 }
 const padGeo = new THREE.PlaneGeometry(2.8, 2.8);
@@ -1210,7 +1437,7 @@ function movePlayer(dt) {
       }
     }
   });
-  player.pos.x = Math.max(-23, Math.min(22, player.pos.x));
+  player.pos.x = Math.max(-31, Math.min(30, player.pos.x));
   player.pos.z = Math.max(-4.6, Math.min(14, player.pos.z));
 }
 
@@ -1241,13 +1468,16 @@ function toast(text, ms) {
   const t = $('toast'); t.textContent = text; t.hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms);
 }
-let lastMoney = -1, lastBag = '', lastStaff = '';
+let lastMoney = -1, lastBag = '', lastStaff = '', lastRep = '';
 function updateHud() {
   const m = Math.floor(S.money);
   if (m !== lastMoney) { lastMoney = m; $('money').textContent = '₺' + m.toLocaleString('tr-TR'); }
   const bag = player.stack.length + '/' + player.cap;
   if (bag !== lastBag) { lastBag = bag; $('bag').textContent = 'Sepet ' + bag; $('bag').classList.toggle('full', player.stack.length >= player.cap); }
-  const staff = 'Çalışan ' + ((cashier ? 1 : 0) + helpers.length + (accountant ? 1 : 0)) + '/4';
+  const stars = Math.max(1, Math.round(S.rep / 20));
+  const rep = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+  if (rep !== lastRep) { lastRep = rep; $('rep').textContent = rep; }
+  const staff = 'Çalışan ' + ((cashier ? 1 : 0) + helpers.length + (accountant ? 1 : 0)) + '/5';
   if (staff !== lastStaff) { lastStaff = staff; $('staff').textContent = staff; }
   const done = PADS.filter(p => S.unlocked[p.id]).length;
   $('progressFill').style.width = (done / PADS.length * 100) + '%';
@@ -1277,7 +1507,7 @@ function syncMainMenu() {
 }
 function setPlaying(on) {
   $('menu').hidden = on;
-  $('hud').hidden = $('progress').hidden = gameState === 'menu';
+  $('hud').hidden = $('progress').hidden = $('rep').hidden = gameState === 'menu';
   if (on) { unlockAudio(); canvas.focus({ preventScroll: true }); } else { stick.id = null; hideStick(); }
 }
 function play() { gameState = 'play'; camK = 2.5; setPlaying(true); updateHud(); lastT = performance.now(); }
@@ -1318,14 +1548,16 @@ const SAVE_KEY = 'kose-bakkal-v1';
 let noSave = false;
 function save() {
   if (noSave) return;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
 }
 function load() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { d = null; }
   if (!d) return;
-  S.money = +d.money || 0; S.earned = +d.earned || 0; S.done = !!d.done; S.sound = d.sound !== false;
+  S.money = +d.money || 0; S.earned = +d.earned || 0; S.sound = d.sound !== false;
   if (d.quality === 'low') S.quality = 'low';
+  if (Number.isFinite(d.rep)) S.rep = d.rep;
+  S.done = !!d.done && PADS.every(p => d.unlocked && d.unlocked[p.id]);
   PADS.forEach(p => {
     if (d.unlocked && d.unlocked[p.id]) { S.unlocked[p.id] = true; applyUnlock(p.id, false); }
     else if (d.paid && d.paid[p.id]) { p.paid = Math.min(d.paid[p.id], p.cost - 1); p.fill.scale.y = p.paid / p.cost; p.fill.position.y = -1.36 + 1.36 * p.paid / p.cost; }
@@ -1369,10 +1601,12 @@ function step(dt, time) {
   tryCollect(player);
   tryDeposit(player);
   updateSources(dt);
+  updateRush(dt);
   if ((spawnT -= dt) <= 0) {
     const open = openShelves().length;
-    spawnT = 6 * adBoost / (1 + 0.22 * (open - 1)) * rnd(0.8, 1.2);
-    if (customers.length < 3 + open * 2) spawnCustomer();
+    const repPace = S.rep >= 80 ? 0.85 : S.rep < 40 ? 1.5 : 1;
+    spawnT = 5.5 * adBoost * repPace * (rushOn ? 0.4 : 1) / (1 + 0.2 * (open - 1)) * rnd(0.8, 1.2);
+    if (customers.length < Math.min(16, 4 + open * 2) + (rushOn ? 4 : 0)) spawnCustomer();
   }
   for (let i = customers.length - 1; i >= 0; i--) { const c = customers[i]; updateCustomer(c, dt); if (customers.includes(c)) updateActor(c, dt); }
   updateRegister(dt);
@@ -1382,6 +1616,11 @@ function step(dt, time) {
   if (cashier) { cashier.face = 0; updateActor(cashier, dt); }
   if (accountant) { accountantAI(accountant, dt); updateActor(accountant, dt); }
   updatePads(dt);
+  updateDoors(dt);
+  flock.forEach(f => {
+    f.g.position.x = f.p[0] + Math.sin(time * 0.7 + f.i * 2) * 0.6;
+    f.g.rotation.y = Math.cos(time * 0.7 + f.i * 2) > 0 ? 0 : Math.PI;
+  });
   updateItems(dt);
   updatePops(dt);
   updateBits(dt);
