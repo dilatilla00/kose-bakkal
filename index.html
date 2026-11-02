@@ -1,0 +1,1423 @@
+<!doctype html>
+<html lang="tr">
+<meta charset="utf-8">
+<title>Köşe Bakkal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Mahalle bakkalını işlet: ürün topla, rafları doldur, çalışan al, dükkânı büyüt.">
+<meta name="theme-color" content="#e4472f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Köşe Bakkal">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap">
+<style>
+/* Layout: tam ekran 3B mahalle, üstünde tek sıra yapışkan etiket gibi duran arayüz. Tek görünümlü, aydınlık bir dünya. */
+:root {
+  --ink: #2c2a3f;
+  --paper: #fffaf0;
+  --tomato: #e4472f;
+  --mustard: #f5b92e;
+  --leaf: #3f9b5a;
+  --sky: #a9e3d7;
+  --font: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  color-scheme: light;
+}
+[hidden] { display: none !important; }
+* { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  position: fixed; inset: 0; width: 100%;
+  background: var(--sky); color: var(--ink); font-family: var(--font);
+  overflow: hidden; overscroll-behavior: none; touch-action: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  -webkit-text-size-adjust: 100%;
+}
+#menu {
+  position: fixed; inset: 0; z-index: 5; overflow-y: auto; touch-action: pan-y;
+  display: grid; place-items: center; background: rgba(44, 42, 63, .3);
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.panel { width: min(340px, 100%); display: grid; gap: 12px; }
+.logo {
+  margin: 0; padding: 10px 14px 4px; text-align: center; font-size: clamp(40px, 13vw, 54px); line-height: 1;
+  font-weight: 800; color: var(--paper); background: var(--tomato);
+  border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink); transform: rotate(-2deg);
+}
+.logo small { display: block; font-size: .36em; line-height: 1.7; color: var(--mustard); letter-spacing: .08em; }
+.card {
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
+  padding: 8px 16px; font-size: 18px; font-weight: 600; line-height: 1.35; text-align: center;
+}
+.card h2 { margin: 0 0 4px; font-size: 26px; font-weight: 800; }
+.card ol { margin: 0; padding-left: 24px; text-align: left; display: grid; gap: 4px; }
+.menuBtn {
+  width: 100%; min-height: 54px; padding: 4px 14px; cursor: pointer;
+  font: 800 22px var(--font); color: var(--ink); background: var(--paper);
+  border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
+  touch-action: manipulation;
+}
+.menuBtn.primary { min-height: 66px; font-size: 30px; background: var(--mustard); }
+.menuBtn.danger { color: var(--paper); background: var(--tomato); }
+.menuBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.menuBtn:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
+#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+#hud {
+  position: fixed; top: 0; left: 0; right: 0; pointer-events: none;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: start;
+}
+.stats { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.sticker {
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px;
+  box-shadow: 0 4px 0 var(--ink); padding: 2px 14px; font-weight: 800;
+  font-variant-numeric: tabular-nums; line-height: 1.5;
+}
+#money { font-size: 26px; background: var(--mustard); transition: transform .12s; }
+#money.pop { transform: scale(1.12) rotate(-2deg); }
+#bag, #staff { font-size: 18px; align-self: center; }
+#staff { background: #1f8a70; color: var(--paper); }
+#bag.full { background: var(--tomato); color: var(--paper); }
+.tools { display: flex; gap: 8px; pointer-events: auto; }
+.tools button {
+  font: 800 17px var(--font); color: var(--ink); background: var(--paper);
+  border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer; width: 44px; height: 44px; padding: 0; touch-action: manipulation;
+}
+.tools button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.tools button:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
+#hint {
+  grid-column: 1 / -1; justify-self: center; max-width: 100%;
+  font-size: 19px; text-align: center; background: var(--ink); color: var(--paper);
+  border-color: var(--ink); box-shadow: none; text-wrap: balance;
+}
+#progress {
+  position: fixed; left: 50%; transform: translateX(-50%); pointer-events: none;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: min(280px, calc(100% - 64px)); height: 16px;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 10px; overflow: hidden;
+}
+#progress i { display: block; height: 100%; width: 0; background: var(--leaf); transition: width .3s; }
+#toast {
+  position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%);
+  pointer-events: none; font-size: clamp(24px, 6vw, 40px); padding: 6px 22px;
+  text-align: center; background: var(--tomato); color: var(--paper); max-width: calc(100% - 40px);
+  text-wrap: balance;
+}
+.stick { position: fixed; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); }
+#stickBase { width: 110px; height: 110px; background: rgba(44, 42, 63, .18); border: 3px solid rgba(44, 42, 63, .45); }
+#stickKnob { width: 52px; height: 52px; background: var(--paper); border: 3px solid var(--ink); }
+@media (max-width: 520px) {
+  #money { font-size: 22px; padding: 1px 10px; }
+  #bag, #staff { font-size: 15px; padding: 2px 8px; }
+  #hint { font-size: 16px; }
+}
+@media (max-height: 460px) {
+  .panel { width: min(560px, 100%); grid-template-columns: 1fr 1fr; }
+  .logo, .card { grid-column: 1 / -1; }
+  .logo { font-size: 32px; }
+  .menuBtn, .menuBtn.primary { min-height: 46px; font-size: 19px; }
+}
+#fail { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: var(--sky); font-size: 20px; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+</style>
+
+<canvas id="game" tabindex="0" aria-label="Köşe Bakkal oyun alanı. WASD, ok tuşları ya da sürükleyerek hareket et."></canvas>
+<div id="hud" hidden>
+  <div class="stats">
+    <div id="money" class="sticker">₺0</div>
+    <div id="bag" class="sticker">Sepet 0/5</div>
+    <div id="staff" class="sticker">Çalışan 0/4</div>
+  </div>
+  <div class="tools">
+    <button id="pauseBtn" type="button" aria-label="Oyunu duraklat">II</button>
+  </div>
+  <div id="hint" class="sticker">Karpuz topla</div>
+</div>
+<div id="menu">
+  <div id="pMain" class="panel">
+    <h1 class="logo"><small>MAHALLENİN</small>KÖŞE BAKKAL</h1>
+    <div id="saveInfo" class="card" hidden></div>
+    <button id="btnPlay" class="menuBtn primary" type="button">Oyna</button>
+    <button class="menuBtn" type="button" data-go="pHow">Nasıl oynanır</button>
+    <button id="btnInstall" class="menuBtn" type="button" data-go="pInstall" hidden>iPhone'a ekle</button>
+    <button class="menuBtn" type="button" data-go="pSettings">Ayarlar</button>
+  </div>
+  <div id="pPause" class="panel" hidden>
+    <div class="card"><h2>Oyun durdu</h2>Dükkân seni bekliyor.</div>
+    <button id="btnResume" class="menuBtn primary" type="button">Devam et</button>
+    <button class="menuBtn" type="button" data-go="pHow">Nasıl oynanır</button>
+    <button class="menuBtn" type="button" data-go="pSettings">Ayarlar</button>
+    <button id="btnHome" class="menuBtn" type="button">Ana menü</button>
+  </div>
+  <div id="pHow" class="panel" hidden>
+    <div class="card">
+      <h2>Nasıl oynanır</h2>
+      <ol>
+        <li>Parmağını ekranda sürükleyerek yürü.</li>
+        <li>Bahçeye gir, ürünler sepetine dolsun.</li>
+        <li>Rafın önüne gelince ürünler dizilir.</li>
+        <li>Kasaya geç, müşterinin ödemesini al.</li>
+        <li>Masadaki parayı topla.</li>
+        <li>Fiyatlı karelere basıp yeni yer aç, çalışan tut.</li>
+      </ol>
+    </div>
+    <button class="menuBtn primary" type="button" data-back>Tamam</button>
+  </div>
+  <div id="pSettings" class="panel" hidden>
+    <div class="card"><h2>Ayarlar</h2></div>
+    <button id="btnSound" class="menuBtn" type="button">Ses: Açık</button>
+    <button id="btnQuality" class="menuBtn" type="button">Grafik: Yüksek</button>
+    <button id="btnReset" class="menuBtn" type="button">İlerlemeyi sıfırla</button>
+    <button class="menuBtn primary" type="button" data-back>Geri</button>
+  </div>
+  <div id="pInstall" class="panel" hidden>
+    <div class="card">
+      <h2>iPhone'a ekle</h2>
+      <ol>
+        <li>Bu sayfayı Safari'de aç.</li>
+        <li>Alttaki Paylaş düğmesine dokun.</li>
+        <li>Ana Ekrana Ekle'yi seç.</li>
+        <li>Oyunu ana ekrandaki simgesinden aç.</li>
+      </ol>
+    </div>
+    <button class="menuBtn primary" type="button" data-back>Tamam</button>
+  </div>
+</div>
+<div id="progress" aria-hidden="true" hidden><i id="progressFill"></i></div>
+<div id="toast" class="sticker" hidden></div>
+<div id="stickBase" class="stick" hidden></div>
+<div id="stickKnob" class="stick" hidden></div>
+<div id="fail" hidden>Oyun yüklenemedi. Sayfayı yenilemeyi dene.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+if (!window.THREE) { document.getElementById('fail').hidden = false; return; }
+
+/* ---------- Yardımcılar ---------- */
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const FONT = '"Baloo 2", "Trebuchet MS", system-ui, sans-serif';
+const INK = '#2c2a3f';
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const matCache = {};
+function mat(color) { return matCache[color] || (matCache[color] = new THREE.MeshLambertMaterial({ color })); }
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+function mesh(geo, material, x, y, z, parent) {
+  const m = new THREE.Mesh(geo, material);
+  m.position.set(x || 0, y || 0, z || 0);
+  m.castShadow = true; m.receiveShadow = true;
+  (parent || scene).add(m);
+  return m;
+}
+function box(w, h, d, material, x, y, z, parent) {
+  return mesh(new THREE.BoxGeometry(w, h, d), material, x, y, z, parent);
+}
+const allTex = [];
+function canvasTex(w, h, draw, repeat) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  allTex.push({ t, c, draw });
+  t.anisotropy = 4;
+  if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat[0], repeat[1]); }
+  return t;
+}
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+
+/* ---------- Sahne ---------- */
+const canvas = $('game');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa9e3d7);
+const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 150);
+const CAM = V(7.5, 17.5, 14.2);
+const YAW = Math.atan2(CAM.x, CAM.z);
+let camScale = 1;
+
+scene.add(new THREE.HemisphereLight(0xfff6e0, 0x86b083, 0.62));
+const sun = new THREE.DirectionalLight(0xfff0d0, 0.5);
+sun.castShadow = true;
+const shadowSize = isTouch ? 1024 : 2048, shadowSpan = isTouch ? 24 : 30;
+sun.shadow.mapSize.set(shadowSize, shadowSize);
+Object.assign(sun.shadow.camera, { left: -shadowSpan, right: shadowSpan, top: shadowSpan, bottom: -shadowSpan, near: 1, far: 90 });
+sun.shadow.bias = -0.0006;
+scene.add(sun, sun.target);
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camScale = camera.aspect < 0.65 ? 1.55 : camera.aspect < 1 ? 1.35 : 1;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+addEventListener('orientationchange', () => setTimeout(resize, 250));
+canvas.addEventListener('webglcontextlost', e => e.preventDefault());
+['gesturestart', 'gesturechange', 'dblclick'].forEach(n => document.addEventListener(n, e => e.preventDefault(), { passive: false }));
+canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+
+/* ---------- Mahalle ---------- */
+const M = {
+  grass: mat(0x9ad06d), wood: mat(0xb9804a), woodDark: mat(0x8a5a33), wall: mat(0xf7e7c6),
+  white: mat(0xffffff), red: mat(0xe4472f), ink: mat(0x2c2a3f), dirt: mat(0x8e6243),
+  leaf: mat(0x3f9b5a), steel: mat(0xc9d3d8), brick: mat(0xc56a4a), glass: mat(0xbfeaf0),
+  mustard: mat(0xf5b92e), kerb: mat(0xd9d4c8), trunk: mat(0x7b5236),
+};
+
+function flat(w, d, material, x, y, z) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), material);
+  m.rotation.x = -Math.PI / 2; m.position.set(x, y, z); m.receiveShadow = true; scene.add(m);
+  return m;
+}
+flat(160, 120, M.grass, 0, 0, 0);
+
+const floorTex = canvasTex(128, 128, (g, w) => {
+  g.fillStyle = '#fbeed2'; g.fillRect(0, 0, w, w);
+  g.fillStyle = '#7fc8b8'; g.fillRect(0, 0, w / 2, w / 2); g.fillRect(w / 2, w / 2, w / 2, w / 2);
+}, [18, 14]);
+flat(20, 15, new THREE.MeshLambertMaterial({ map: floorTex }), 0, 0.02, 1.9);
+box(20.4, 0.1, 15.4, M.kerb, 0, -0.04, 1.9).castShadow = false;
+
+const cobble = canvasTex(256, 256, (g, w) => {
+  g.fillStyle = '#8d8a99'; g.fillRect(0, 0, w, w);
+  for (let y = 0; y < 8; y++) for (let x = -1; x < 8; x++) {
+    g.fillStyle = ['#a7a4b2', '#b3b0bd', '#9b98a8'][(x * 3 + y * 5 + 99) % 3];
+    roundRect(g, x * 32 + (y % 2) * 16 + 2, y * 32 + 2, 28, 28, 6); g.fill();
+  }
+}, [40, 3]);
+flat(200, 6, new THREE.MeshLambertMaterial({ map: cobble }), 0, 0.03, 12);
+
+/* Arka duvar, tente, tabela */
+box(20, 3.2, 0.5, M.wall, 0, 1.6, -5.25);
+const signTex = canvasTex(1024, 192, (g, w, h) => {
+  g.fillStyle = '#e4472f'; roundRect(g, 4, 4, w - 8, h - 8, 32); g.fill();
+  g.lineWidth = 10; g.strokeStyle = '#fffaf0'; roundRect(g, 18, 18, w - 36, h - 36, 24); g.stroke();
+  drawSign(g, w, h);
+});
+function drawSign(g, w, h) {
+  g.fillStyle = '#fffaf0'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `800 112px ${FONT}`; g.fillText('KÖŞE BAKKAL', w / 2, h / 2 + 8);
+}
+const sign = box(9, 1.7, 0.3, [M.red, M.red, M.red, M.red, new THREE.MeshLambertMaterial({ map: signTex }), M.red], 0, 4.5, -5.1);
+sign.castShadow = true;
+for (let i = 0; i < 20; i++) {
+  const a = box(1, 0.12, 0.6, i % 2 ? M.white : M.red, -9.5 + i, 3.3, -4.85);
+  a.rotation.x = 0.42;
+}
+
+function tree(x, z, s) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);
+  mesh(new THREE.CylinderGeometry(0.28, 0.38, 1.6, 8), M.trunk, 0, 0.8, 0, g);
+  const leafMat = mat(s > 1.05 ? 0x57ad5e : 0x6bbd5f);
+  mesh(new THREE.SphereGeometry(1.4, 12, 10), leafMat, 0, 2.6, 0, g);
+  mesh(new THREE.SphereGeometry(0.95, 10, 8), leafMat, 0.8, 2.1, 0.3, g);
+  mesh(new THREE.SphereGeometry(0.85, 10, 8), leafMat, -0.8, 2.2, -0.2, g);
+}
+[[-24, -7, 1.2], [-12, -7.5, 1], [13, -7.5, 1.15], [24, -6, 1], [-26, 7, 1.1], [24, 8, 1.2], [-13, 16, 1.1], [12, 17, 1], [34, 16, 1.2], [-34, 16, 1]]
+  .forEach(t => tree(t[0], t[1], t[2]));
+
+/* Arkadaki mahalle evleri */
+const houseTex = canvasTex(128, 128, (g, w) => {
+  g.clearRect(0, 0, w, w); g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, w);
+  g.fillStyle = '#5a7f91'; roundRect(g, 38, 30, 52, 68, 6); g.fill();
+  g.fillStyle = '#d5f1f4'; g.fillRect(44, 36, 18, 56); g.fillRect(66, 36, 18, 56);
+});
+houseTex.wrapS = houseTex.wrapT = THREE.RepeatWrapping;
+[0xf4b6a0, 0xf9dc8c, 0xb6d8ea, 0xe7b8d3, 0xf7e7c6, 0xc7dcae, 0xf4b6a0, 0xb6d8ea].forEach((c, i) => {
+  const w = 8 + (i % 3), h = 7 + (i * 5 % 4), x = -36 + i * 10.5;
+  const t = houseTex.clone(); t.needsUpdate = true; t.repeat.set(Math.round(w / 2.4), Math.round(h / 2.8));
+  box(w, h, 5, new THREE.MeshLambertMaterial({ color: c, map: t }), x, h / 2, -13);
+  const roof = mesh(new THREE.ConeGeometry(w * 0.74, 2.2, 4), M.brick, x, h + 1.1, -13);
+  roof.rotation.y = Math.PI / 4; roof.scale.z = 0.5;
+});
+
+/* Paspasta uyuyan sokak kedisi */
+const cat = new THREE.Group(); cat.position.set(-0.8, 0.05, 9); cat.rotation.y = 0.5; scene.add(cat);
+const fur = mat(0xeea04a);
+const catBody = mesh(new THREE.SphereGeometry(0.42, 12, 10), fur, 0, 0.3, 0, cat); catBody.scale.set(1.3, 0.8, 0.95);
+mesh(new THREE.SphereGeometry(0.25, 12, 10), fur, 0.52, 0.36, 0.1, cat);
+[-0.1, 0.11].forEach(z => { const e = mesh(new THREE.ConeGeometry(0.09, 0.17, 4), fur, 0.54, 0.62, 0.1 + z, cat); e.rotation.z = -0.1; });
+const tail = mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.72, 6), fur, -0.42, 0.12, 0.32, cat); tail.rotation.set(Math.PI / 2, 0, 0.9);
+const mat2 = box(3.4, 0.05, 1.8, M.brick, -0.8, 0.03, 9.2); mat2.castShadow = false;
+
+/* ---------- Ürünler ---------- */
+const melonTex = canvasTex(128, 64, (g, w, h) => {
+  g.fillStyle = '#2f8a3e'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#14592a';
+  for (let i = 0; i < 9; i++) { const x = i * w / 9; g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + 10, h / 3, x - 6, h * 2 / 3, x + 4, h); g.lineTo(x + 9, h); g.bezierCurveTo(x, h * 2 / 3, x + 16, h / 3, x + 7, 0); g.fill(); }
+});
+const G = {
+  melon: new THREE.SphereGeometry(0.34, 14, 12), tom: new THREE.SphereGeometry(0.23, 12, 10),
+  stem: new THREE.ConeGeometry(0.1, 0.08, 5), bread: new THREE.SphereGeometry(0.2, 12, 10),
+  bottle: new THREE.CylinderGeometry(0.14, 0.15, 0.42, 12), cap: new THREE.CylinderGeometry(0.15, 0.15, 0.08, 12),
+  bill: new THREE.BoxGeometry(0.64, 0.08, 0.36),
+};
+const billTop = new THREE.MeshLambertMaterial({ map: canvasTex(128, 72, (g, w, h) => {
+  g.fillStyle = '#7fd089'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#2f8a3e'; g.lineWidth = 6; g.strokeRect(6, 6, w - 12, h - 12);
+  g.fillStyle = '#1f6a31'; g.font = `800 46px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('₺', w / 2, h / 2 + 3);
+}) });
+const billSide = mat(0x5bbd6d);
+const melonMat = new THREE.MeshLambertMaterial({ map: melonTex });
+const tomMat = mat(0xe4472f), breadMat = mat(0xdb9c52), bottleMat = mat(0xffffff), capMat = mat(0x36a6c9);
+
+const BUILD = {
+  karpuz() { const m = mesh(G.melon, melonMat); m.scale.set(1, 0.86, 0.86); return m; },
+  domates() {
+    const g = new THREE.Group(); const t = mesh(G.tom, tomMat, 0, 0, 0, g); t.scale.y = 0.86;
+    mesh(G.stem, M.leaf, 0, 0.21, 0, g); return g;
+  },
+  ekmek() {
+    const g = new THREE.Group(); const b = mesh(G.bread, breadMat, 0, 0, 0, g); b.scale.set(2.3, 0.85, 0.95); return g;
+  },
+  ayran() { const g = new THREE.Group(); mesh(G.bottle, bottleMat, 0, 0, 0, g); mesh(G.cap, capMat, 0, 0.24, 0, g); return g; },
+  bill() { return mesh(G.bill, [billSide, billSide, billTop, billSide, billSide, billSide]); },
+  poset() {
+    const g = new THREE.Group(); box(0.46, 0.5, 0.3, mat(0xc99a63), 0, 0, 0, g);
+    box(0.48, 0.05, 0.32, mat(0xa97c48), 0, 0.2, 0, g); return g;
+  },
+};
+const HEIGHT = { karpuz: 0.56, domates: 0.38, ekmek: 0.32, ayran: 0.5, bill: 0.09, poset: 0.5 };
+const PRODUCT = { karpuz: { name: 'Karpuz', price: 6 }, domates: { name: 'Domates', price: 9 }, ekmek: { name: 'Ekmek', price: 14 }, ayran: { name: 'Ayran', price: 20 } };
+
+function drawIcon(g, type, x, y, r) {
+  if (type === 'karpuz') { g.fillStyle = '#2f8a3e'; g.beginPath(); g.ellipse(x, y, r, r * 0.85, 0, 0, 7); g.fill(); g.strokeStyle = '#14592a'; g.lineWidth = r * 0.16; [-0.45, 0, 0.45].forEach(k => { g.beginPath(); g.ellipse(x + k * r * 0.5, y, r * 0.3, r * 0.82, 0, 0, 7); g.stroke(); }); }
+  if (type === 'domates') { g.fillStyle = '#e4472f'; g.beginPath(); g.ellipse(x, y + r * 0.1, r * 0.9, r * 0.78, 0, 0, 7); g.fill(); g.fillStyle = '#3f9b5a'; g.beginPath(); g.ellipse(x, y - r * 0.62, r * 0.4, r * 0.17, 0, 0, 7); g.fill(); }
+  if (type === 'ekmek') { g.fillStyle = '#db9c52'; g.beginPath(); g.ellipse(x, y, r, r * 0.48, -0.3, 0, 7); g.fill(); g.strokeStyle = '#f5d9a0'; g.lineWidth = r * 0.12; [-0.4, 0, 0.4].forEach(k => { g.beginPath(); g.moveTo(x + k * r - 3, y + r * 0.1); g.lineTo(x + k * r + 7, y - r * 0.25); g.stroke(); }); }
+  if (type === 'ayran') { g.fillStyle = '#ffffff'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.45, y - r * 0.7, r * 0.9, r * 1.6, 6); g.fill(); g.stroke(); g.fillStyle = '#36a6c9'; g.fillRect(x - r * 0.5, y - r * 0.92, r, r * 0.3); }
+  if (type === 'kasa') { g.fillStyle = '#7fd089'; g.strokeStyle = '#2f8a3e'; g.lineWidth = 5; roundRect(g, x - r, y - r * 0.6, r * 2, r * 1.2, 7); g.fill(); g.stroke(); g.fillStyle = '#1f6a31'; g.font = `800 ${r * 1.1}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('₺', x, y + 2); }
+  if (type === 'kalp') { g.fillStyle = '#e4472f'; g.font = `800 ${r * 2}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('♥', x, y + 3); }
+}
+const bubbleCache = {};
+function bubbleTex(type, n) {
+  const key = type + '|' + n;
+  if (bubbleCache[key]) return bubbleCache[key];
+  const t = canvasTex(160, 112, (g, w) => {
+    g.fillStyle = '#fffaf0'; g.strokeStyle = INK; g.lineWidth = 5;
+    roundRect(g, 5, 5, w - 10, 84, 22); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(68, 88); g.lineTo(80, 106); g.lineTo(92, 88); g.fill();
+    g.beginPath(); g.moveTo(68, 89); g.lineTo(80, 106); g.lineTo(92, 89); g.stroke();
+    if (n) { drawIcon(g, type, 52, 47, 27); g.fillStyle = INK; g.font = `800 40px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('×' + n, 112, 50); }
+    else drawIcon(g, type, w / 2, 47, 28);
+  });
+  return bubbleCache[key] = t;
+}
+
+/* Havada veya yığında süzülen her nesne: hedefine yumuşakça gider */
+const items = new Set();
+function spawnItem(type, pos, s) {
+  const m = BUILD[type](); scene.add(m);
+  const it = { type, mesh: m, p: pos.clone(), t: pos.clone(), k: 14, arc: 0.35, s: s === undefined ? 1 : s, cur: s === undefined ? 1 : s, die: -1, hover: 0 };
+  items.add(it); return it;
+}
+function killItem(it, delay) { it.die = delay; }
+function updateItems(dt) {
+  items.forEach(it => {
+    it.p.lerp(it.t, 1 - Math.exp(-it.k * dt));
+    const d = it.p.distanceTo(it.t);
+    it.mesh.position.copy(it.p);
+    it.mesh.position.y += Math.min(d, 4) * it.arc;
+    if (it.die >= 0) { it.die -= dt; if (it.die < 0) it.s = 0, it.die = -2; }
+    it.cur += (it.s - it.cur) * Math.min(1, dt * 14);
+    it.mesh.scale.setScalar(Math.max(0.001, it.cur));
+    if (it.die === -2 && it.cur < 0.05) { scene.remove(it.mesh); items.delete(it); }
+  });
+}
+
+/* ---------- Karakterler ---------- */
+function makeChar(o) {
+  const g = new THREE.Group(); scene.add(g);
+  const body = mat(o.body), skin = mat(o.skin);
+  const torso = mesh(new THREE.SphereGeometry(0.42, 16, 12), body, 0, 0.72, 0, g); torso.scale.set(1, 1.18, 0.92);
+  mesh(new THREE.SphereGeometry(0.33, 16, 12), skin, 0, 1.36, 0, g);
+  [-0.12, 0.12].forEach(x => mesh(new THREE.SphereGeometry(0.045, 8, 6), M.ink, x, 1.4, 0.3, g));
+  if (o.apron) { const a = mesh(new THREE.SphereGeometry(0.4, 14, 10), M.white, 0, 0.66, 0.1, g); a.scale.set(0.92, 1, 0.92); }
+  if (o.mustache) { const b = box(0.3, 0.07, 0.07, M.ink, 0, 1.29, 0.32, g); b.castShadow = false; }
+  if (o.cap) {
+    const capM = mat(o.cap); const c = mesh(new THREE.SphereGeometry(0.34, 14, 8, 0, 6.3, 0, 1.5), capM, 0, 1.45, 0, g); c.scale.y = 0.75;
+    box(0.36, 0.05, 0.24, capM, 0, 1.47, 0.34, g);
+  } else if (o.hair) {
+    const c = mesh(new THREE.SphereGeometry(0.35, 14, 8, 0, 6.3, 0, 1.25), mat(o.hair), 0, 1.4, -0.03, g); c.scale.y = 0.95;
+  }
+  const legGeo = new THREE.SphereGeometry(0.15, 10, 8);
+  const legL = mesh(legGeo, M.ink, -0.2, 0.15, 0, g), legR = mesh(legGeo, M.ink, 0.2, 0.15, 0, g);
+  const armGeo = new THREE.SphereGeometry(0.11, 8, 6);
+  const armL = mesh(armGeo, skin, -0.42, 0.82, 0.25, g), armR = mesh(armGeo, skin, 0.42, 0.82, 0.25, g);
+  return { g, legL, legR, armL, armR, phase: Math.random() * 6 };
+}
+function newActor(look, pos, cap) {
+  return { rig: makeChar(look), pos: pos.clone(), face: 0, moving: false, stack: [], cap, fx: 0, walk: 0, collectT: 0, depositT: 0 };
+}
+function angleTo(a, b, k) {
+  let d = (b - a + Math.PI) % (Math.PI * 2) - Math.PI;
+  if (d < -Math.PI) d += Math.PI * 2;
+  return a + d * k;
+}
+function moveTo(e, target, speed, dt) {
+  const dx = target.x - e.pos.x, dz = target.z - e.pos.z, d = Math.hypot(dx, dz);
+  if (d < 0.12) return true;
+  const s = Math.min(d, speed * dt);
+  e.pos.x += dx / d * s; e.pos.z += dz / d * s;
+  e.face = angleTo(e.face, Math.atan2(dx, dz), Math.min(1, dt * 12));
+  e.moving = true;
+  return false;
+}
+function updateActor(e, dt) {
+  const r = e.rig;
+  r.g.position.set(e.pos.x, 0, e.pos.z);
+  r.g.rotation.y = e.face;
+  if (e.moving) {
+    e.walk += dt * 13;
+    const s = Math.sin(e.walk + r.phase);
+    r.legL.position.z = s * 0.22; r.legR.position.z = -s * 0.22;
+    r.g.position.y = Math.abs(s) * 0.08;
+  } else { r.legL.position.z *= 0.8; r.legR.position.z *= 0.8; }
+  const carrying = e.stack.length > 0;
+  [r.armL, r.armR].forEach(a => { a.position.z += ((carrying ? 0.42 : 0.1) - a.position.z) * Math.min(1, dt * 12); });
+  /* Yığın: yukarı doğru gecikmeli takip eder, yürürken sallanır */
+  const fx = Math.sin(e.face), fz = Math.cos(e.face);
+  let y = 0.86;
+  e.stack.forEach((it, i) => {
+    const h = HEIGHT[it.type];
+    it.t.set(e.pos.x + fx * 0.66, y + h / 2, e.pos.z + fz * 0.66);
+    it.k = Math.max(9, 26 - i * 2);
+    it.mesh.rotation.y = e.face;
+    y += h;
+  });
+  e.moving = false;
+}
+
+/* ---------- Üretim ve raflar ---------- */
+const sources = {}, shelves = {};
+const solids = [];
+function addSource(type, group, slotPos, grow, reach, center) {
+  const s = sources[type] = { type, group, grow, reach, center, unlocked: false, solid: null, slots: slotPos.map(p => ({ pos: p, it: null, t: 0 })) };
+  return s;
+}
+function fillSlots(src, ripe) {
+  src.slots.forEach((sl, i) => {
+    sl.t = ripe ? src.grow : src.grow * (i / src.slots.length);
+    sl.it = spawnItem(src.type, sl.pos, ripe ? 1 : 0.05);
+  });
+}
+function updateSources(dt) {
+  Object.values(sources).forEach(src => {
+    if (!src.unlocked) return;
+    src.slots.forEach(sl => {
+      if (!sl.it) { sl.t = 0; sl.it = spawnItem(src.type, sl.pos, 0.05); return; }
+      if (sl.t < src.grow) { sl.t += dt; sl.it.s = Math.min(1, 0.1 + 0.9 * sl.t / src.grow); }
+    });
+  });
+}
+function isRipe(src, sl) { return sl.it && sl.t >= src.grow; }
+function ripeCount(src) { return src.slots.filter(sl => isRipe(src, sl)).length; }
+function nearestRipe(src, pos) {
+  let best = null, bd = 1e9;
+  src.slots.forEach(sl => { if (isRipe(src, sl)) { const d = Math.hypot(sl.pos.x - pos.x, sl.pos.z - pos.z); if (d < bd) { bd = d; best = sl; } } });
+  return best ? { slot: best, d: bd } : null;
+}
+function fieldPlot(type, cx, cz, plantColor) {
+  const g = new THREE.Group(); g.visible = false; g.position.set(cx, 0, cz); scene.add(g);
+  const d = box(8, 0.2, 5.6, M.dirt, 0, 0.05, 0, g); d.castShadow = false;
+  const leaf = mat(plantColor), slots = [];
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) {
+    const x = -2.4 + c * 2.4, z = -1.25 + r * 2.5;
+    for (let i = 0; i < 4; i++) {
+      const l = mesh(new THREE.SphereGeometry(0.34, 7, 5), leaf, x + Math.cos(i * 1.57) * 0.38, 0.26, z + Math.sin(i * 1.57) * 0.38, g);
+      l.scale.y = 0.35;
+    }
+    if (type === 'domates') { const st = mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 5), M.woodDark, x - 0.3, 0.6, z - 0.3, g); st.castShadow = false; }
+    slots.push(V(cx + x, type === 'domates' ? 0.62 : 0.5, cz + z));
+  }
+  return addSource(type, g, slots, type === 'karpuz' ? 6 : 5, 1.8, V(cx, 0, cz));
+}
+fieldPlot('karpuz', -15.6, -2.2, 0x4aa356);
+fieldPlot('domates', -15.6, 4.2, 0x5fb25a);
+
+function oven() {
+  const g = new THREE.Group(); g.visible = false; g.position.set(15, 0, -3.4); scene.add(g);
+  box(5.2, 2.2, 2.4, M.brick, 0, 1.1, 0, g);
+  const dome = mesh(new THREE.SphereGeometry(1.8, 16, 10, 0, 6.3, 0, 1.57), M.brick, 0, 2.2, 0, g); dome.scale.set(1.3, 0.75, 0.62);
+  box(1.8, 0.95, 0.2, M.ink, 0, 1.05, 1.15, g);
+  const fire = box(1.4, 0.45, 0.1, new THREE.MeshBasicMaterial({ color: 0xf5912e }), 0, 0.85, 1.24, g); fire.castShadow = false;
+  box(5.4, 0.86, 1.1, M.wood, 0, 0.43, 1.9, g);
+  const slots = [-2, -1, 0, 1, 2].map(x => V(15 + x, 1.02, -1.5));
+  const s = addSource('ekmek', g, slots, 3.5, 2.2, V(15, 0, -0.5));
+  s.solid = { x0: 12.2, x1: 17.8, z0: -4.8, z1: -0.9 };
+}
+oven();
+function dairy() {
+  const g = new THREE.Group(); g.visible = false; g.position.set(15, 0, 3.6); scene.add(g);
+  box(4.4, 2.4, 2, M.steel, 0, 1.2, 0, g);
+  mesh(new THREE.CylinderGeometry(0.75, 0.75, 1.3, 16), M.white, -0.95, 3, 0, g);
+  mesh(new THREE.CylinderGeometry(0.75, 0.75, 1.3, 16), M.white, 0.95, 3, 0, g);
+  box(4, 0.4, 0.1, mat(0x36a6c9), 0, 1.9, 1.04, g);
+  box(5.4, 0.86, 1.1, M.wood, 0, 0.43, 1.7, g);
+  const slots = [-2, -1, 0, 1, 2].map(x => V(15 + x, 1.1, 5.3));
+  const s = addSource('ayran', g, slots, 4.5, 2.2, V(15, 0, 6.3));
+  s.solid = { x0: 12.2, x1: 17.8, z0: 2.5, z1: 5.9 };
+}
+dairy();
+
+function makeShelf(type, x) {
+  const g = new THREE.Group(); g.visible = false; g.position.set(x, 0, -3.8); scene.add(g);
+  /* Basamaklı reyon: üstten bakınca iki sıra da görünür */
+  box(3.2, 1.9, 0.12, M.woodDark, 0, 0.95, -0.68, g);
+  box(3.2, 0.5, 0.7, M.wood, 0, 0.25, 0.35, g);
+  box(3.2, 1, 0.7, M.woodDark, 0, 0.5, -0.32, g);
+  const slots = [];
+  [0, 1].forEach(layer => [[0.35, 0.5], [-0.32, 1]].forEach(row => [-1, 0, 1].forEach(c => {
+    slots.push(V(x + c * 0.92, row[1] + HEIGHT[type] * (0.56 + layer), -3.8 + row[0]));
+  })));
+  /* Fiyat etiketi */
+  const tag = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.4), new THREE.MeshBasicMaterial({ map: canvasTex(192, 52, (c, w, h) => {
+    c.fillStyle = '#fffaf0'; c.fillRect(0, 0, w, h); c.fillStyle = INK; c.font = `800 32px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(`${PRODUCT[type].name} ₺${PRODUCT[type].price}`, w / 2, h / 2 + 2);
+  }) }));
+  tag.position.set(0, 0.26, 0.72); g.add(tag);
+  return shelves[type] = { type, group: g, x, slots, items: [], cap: slots.length, stand: V(x, 0, -2.3), unlocked: false, solid: { x0: x - 1.65, x1: x + 1.65, z0: -4.8, z1: -3.05 } };
+}
+makeShelf('karpuz', -6); makeShelf('domates', -2); makeShelf('ekmek', 2); makeShelf('ayran', 6);
+
+/* Kasa */
+const REG = V(4.9, 0, 2.7);
+box(3.8, 1, 1.1, M.wood, 4.9, 0.5, 4.1);
+const panelTex = canvasTex(512, 96, (g, w, h) => {
+  g.fillStyle = '#8a5a33'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#b9804a'; g.lineWidth = 6; [0, 1, 2, 3].forEach(i => g.strokeRect(i * w / 4 + 12, 12, w / 4 - 24, h - 24));
+});
+box(3.7, 0.72, 0.03, new THREE.MeshLambertMaterial({ map: panelTex }), 4.9, 0.5, 4.66).castShadow = false;
+box(3.96, 0.1, 1.26, M.mustard, 4.9, 1.05, 4.1);
+
+/* Ürün bandı */
+const beltTex = canvasTex(128, 32, (g, w, h) => {
+  g.fillStyle = '#2f2d40'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#4a4860'; for (let i = 0; i < 8; i++) g.fillRect(i * 16, 0, 6, h);
+}, [3, 1]);
+box(2.1, 0.06, 0.66, [M.ink, M.ink, new THREE.MeshLambertMaterial({ map: beltTex }), M.ink, M.ink, M.ink], 4.1, 1.13, 4.22);
+[3.87, 4.57].forEach(z => box(2.14, 0.1, 0.05, M.steel, 4.1, 1.15, z));
+box(0.5, 0.03, 0.5, M.ink, 5.46, 1.12, 4.24);
+const scanLine = box(0.42, 0.01, 0.04, new THREE.MeshBasicMaterial({ color: 0xff4a30 }), 5.46, 1.14, 4.24);
+scanLine.castShadow = false;
+
+/* Yazar kasa: gövde, tuşlar, çekmece, müşteri ekranı, fiş rulosu */
+const tillBody = mat(0xe8e3d6);
+const drawer = box(0.96, 0.2, 0.74, M.ink, 6.15, 1.2, 3.96);
+box(0.8, 0.02, 0.56, billTop, 6.15, 1.31, 3.96).castShadow = false;
+box(1, 0.3, 0.8, tillBody, 6.15, 1.38, 4.02);
+const keysTex = canvasTex(128, 96, (g, w, h) => {
+  g.fillStyle = '#3b3950'; g.fillRect(0, 0, w, h);
+  for (let y = 0; y < 3; y++) for (let x = 0; x < 4; x++) {
+    g.fillStyle = x === 3 ? '#f5b92e' : '#e8e3d6'; roundRect(g, 9 + x * 28, 8 + y * 28, 22, 22, 4); g.fill();
+  }
+});
+const keypad = box(0.72, 0.06, 0.54, [M.ink, M.ink, new THREE.MeshLambertMaterial({ map: keysTex }), M.ink, M.ink, M.ink], 6.15, 1.6, 4.0);
+keypad.rotation.x = 0.28;
+mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 8), M.steel, 6.5, 1.78, 4.32);
+const dispCanvas = document.createElement('canvas'); dispCanvas.width = 192; dispCanvas.height = 80;
+const dispTex = new THREE.CanvasTexture(dispCanvas);
+box(0.9, 0.42, 0.06, [M.ink, M.ink, M.ink, M.ink, new THREE.MeshBasicMaterial({ map: dispTex }), M.ink], 6.3, 2.14, 4.36);
+let dispText = null;
+function setDisplay(text) {
+  if (text === dispText) return;
+  dispText = text;
+  const g = dispCanvas.getContext('2d'), w = 192, h = 80;
+  g.fillStyle = '#123d33'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#7dffb0'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `800 ${text.length > 8 ? 26 : 50}px ${FONT}`; g.fillText(text, w / 2, h / 2 + 3);
+  dispTex.needsUpdate = true;
+}
+setDisplay('Hoş geldiniz');
+const roll = mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.3, 12), M.white, 5.78, 1.62, 4.26); roll.rotation.z = Math.PI / 2;
+box(0.2, 0.01, 0.34, M.white, 5.78, 1.56, 4.5).rotation.x = 0.6;
+
+/* Kartlı ödeme cihazı, çay, poşet destesi */
+box(0.3, 0.07, 0.44, M.ink, 5.3, 1.14, 3.76);
+const pos = box(0.24, 0.02, 0.2, new THREE.MeshBasicMaterial({ color: 0x8fe0ff }), 5.3, 1.19, 3.68); pos.castShadow = false;
+mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.03, 12), M.white, 6.7, 1.12, 4.56);
+mesh(new THREE.CylinderGeometry(0.075, 0.055, 0.2, 10), mat(0xb3401e), 6.7, 1.23, 4.56);
+box(0.6, 0.16, 0.42, mat(0xc99a63), 3.3, 1.18, 3.72);
+
+/* Asılı kasa tabelası */
+mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.1, 8), M.steel, 7.05, 1.55, 3.3);
+box(1.3, 0.07, 0.07, M.steel, 6.45, 3.05, 3.3);
+const kasaSign = canvasTex(256, 112, (g, w, h) => {
+  g.fillStyle = '#e4472f'; roundRect(g, 3, 3, w - 6, h - 6, 18); g.fill();
+  g.fillStyle = '#fffaf0'; g.font = `800 66px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('KASA', w / 2, h / 2 + 6);
+});
+box(1.7, 0.74, 0.1, [M.red, M.red, M.red, M.red, new THREE.MeshBasicMaterial({ map: kasaSign }), M.red], 6.05, 2.66, 3.3);
+solids.push({ x0: 2.9, x1: 6.9, z0: 3.48, z1: 4.72 }, { x0: 6.9, x1: 7.2, z0: 3.1, z1: 3.5 });
+
+/* Sıra bariyeri */
+const rope = mat(0xb3271a);
+[-4.5, -2, 0.5, 3, 5.6].forEach((x, i, a) => {
+  mesh(new THREE.CylinderGeometry(0.06, 0.06, 1, 8), M.steel, x, 0.5, 6.3);
+  mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.06, 12), M.steel, x, 0.04, 6.3);
+  if (i < a.length - 1) box(a[i + 1] - x, 0.05, 0.05, rope, (x + a[i + 1]) / 2, 0.86, 6.3);
+});
+
+/* Para masası */
+box(1.95, 0.5, 1.95, M.woodDark, 8.3, 0.25, 3.85);
+box(2.1, 0.08, 2.1, M.mustard, 8.3, 0.52, 3.85);
+solids.push({ x0: 7.25, x1: 9.35, z0: 2.8, z1: 4.9 });
+
+/* Dükkân içi dekor */
+[-10.1, 10.1].forEach(x => { box(0.4, 3.2, 1.9, M.wall, x, 1.6, -4.4); solids.push({ x0: x - 0.2, x1: x + 0.2, z0: -5.3, z1: -3.45 }); });
+box(15.4, 0.1, 0.6, M.woodDark, 0, 2.3, -4.75);
+const GOODS = [0xe4472f, 0xf5b92e, 0x36a6c9, 0x3f9b5a, 0xe87fb0, 0xf5912e, 0xfffaf0];
+for (let i = 0; i < 40; i++) {
+  const c = mat(GOODS[(i * 3 + (i >> 2)) % 7]), x = -7.4 + i * 0.38;
+  if (i % 3 === 1) mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.42, 10), c, x, 2.56, -4.75);
+  else box(0.3, 0.3 + (i % 4) * 0.07, 0.3, c, x, 2.5 + (i % 4) * 0.035, -4.75);
+}
+const veresiye = canvasTex(320, 240, (g, w, h) => {
+  g.fillStyle = '#fffaf0'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#2c2a3f'; g.lineWidth = 12; g.strokeRect(6, 6, w - 12, h - 12);
+  g.fillStyle = '#2c2a3f'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `800 58px ${FONT}`; g.fillText('Bugün para', w / 2, 82);
+  g.fillStyle = '#c23520'; g.fillText('yarın veresiye', w / 2, 158);
+});
+const verPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.75, 1.3), new THREE.MeshLambertMaterial({ map: veresiye }));
+verPlane.position.set(8.9, 2.45, -4.99); scene.add(verPlane);
+const clockTex = canvasTex(128, 128, (g, w) => {
+  g.fillStyle = '#fffaf0'; g.beginPath(); g.arc(64, 64, 60, 0, 7); g.fill(); g.strokeStyle = '#2c2a3f'; g.lineWidth = 8; g.stroke();
+  g.lineCap = 'round'; g.beginPath(); g.moveTo(64, 64); g.lineTo(64, 28); g.moveTo(64, 64); g.lineTo(90, 76); g.stroke();
+});
+const clock = new THREE.Mesh(new THREE.CircleGeometry(0.5, 24), new THREE.MeshLambertMaterial({ map: clockTex, transparent: true }));
+clock.position.set(-8.2, 3.05, -4.98); scene.add(clock);
+
+/* Gazoz dolabı */
+box(1.6, 2.5, 1.1, M.red, -8.8, 1.25, -4.2);
+box(1.34, 2.1, 0.03, mat(0xdff6f7), -8.8, 1.3, -3.64).castShadow = false;
+for (let y = 0; y < 3; y++) for (let x = 0; x < 4; x++) {
+  const b = mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.42, 8), mat(GOODS[(x + y * 2) % 6]), -9.28 + x * 0.32, 0.6 + y * 0.66, -3.6);
+  b.castShadow = false;
+}
+solids.push({ x0: -9.65, x1: -7.95, z0: -4.8, z1: -3.6 });
+
+/* Kapı önü: çuvallar, manav tezgâhı, terazi, fenerler */
+[[-9, 7, 0xe9dfc2, 0xfdf6e3], [-8.2, 7.4, 0xd9c9a0, 0xc99a63], [-9.1, 6.1, 0xe9dfc2, 0xf5b92e]].forEach(s => {
+  const b = mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.86, 10), mat(s[2]), s[0], 0.45, s[1]);
+  const t = mesh(new THREE.SphereGeometry(0.4, 10, 6), mat(s[3]), s[0], 0.82, s[1]); t.scale.y = 0.3;
+  b.receiveShadow = true;
+});
+solids.push({ x0: -9.7, x1: -7.7, z0: 5.6, z1: 7.9 });
+box(3, 0.8, 1.3, M.wood, 8.2, 0.4, 7.7);
+[[7.4, 0xf5912e], [8.2, 0xe4472f], [9, 0x3f9b5a]].forEach(c => {
+  box(0.72, 0.14, 1, M.woodDark, c[0], 0.86, 7.7);
+  const f = mat(c[1]);
+  for (let i = 0; i < 6; i++) mesh(new THREE.SphereGeometry(0.15, 8, 6), f, c[0] - 0.18 + (i % 2) * 0.36, 1.02, 7.35 + (i >> 1) * 0.34);
+});
+solids.push({ x0: 6.7, x1: 9.7, z0: 7.05, z1: 8.35 });
+mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.8, 8), M.steel, 9.95, 1.2, 7.1);
+box(0.5, 0.03, 0.04, M.steel, 9.95, 1.6, 7.1);
+[9.72, 10.18].forEach(x => { box(0.02, 0.26, 0.02, M.steel, x, 1.47, 7.1); mesh(new THREE.CylinderGeometry(0.17, 0.12, 0.04, 12), M.mustard, x, 1.33, 7.1); });
+const glow = new THREE.MeshBasicMaterial({ color: 0xffe7a0 });
+[-10.1, 10.1].forEach(x => {
+  mesh(new THREE.CylinderGeometry(0.16, 0.2, 3.3, 10), M.woodDark, x, 1.65, 9.4);
+  mesh(new THREE.SphereGeometry(0.28, 12, 10), glow, x, 3.5, 9.4).castShadow = false;
+  solids.push({ x0: x - 0.25, x1: x + 0.25, z0: 9.15, z1: 9.65 });
+});
+for (let i = 1; i < 16; i++) {
+  const t = i / 16, x = -10.1 + 20.2 * t, y = 3.3 - Math.sin(t * Math.PI) * 0.7;
+  const bulb = mesh(new THREE.SphereGeometry(0.07, 7, 5), i % 2 ? glow : new THREE.MeshBasicMaterial({ color: 0xff9a7a }), x, y, 9.4);
+  bulb.castShadow = false;
+}
+const matWord = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.2), new THREE.MeshBasicMaterial({ transparent: true, map: canvasTex(320, 120, (g, w, h) => {
+  g.fillStyle = '#fffaf0'; g.font = `800 50px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Hoş geldiniz', w / 2, h / 2 + 3);
+}) }));
+matWord.rotation.x = -Math.PI / 2; matWord.position.set(-2.1, 0.07, 9.2); scene.add(matWord);
+cat.position.x = -3.2;
+
+/* Muhasebecinin çelik kasası */
+const safeGroup = new THREE.Group(); safeGroup.visible = false; safeGroup.position.set(9, 0, -3.95); scene.add(safeGroup);
+box(1.4, 1.5, 1.4, mat(0x4d5968), 0, 0.75, 0, safeGroup);
+box(1.08, 1.2, 0.05, mat(0x6d7a8a), 0, 0.75, 0.72, safeGroup);
+const dial = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 14), M.mustard, 0, 0.75, 0.78, safeGroup); dial.rotation.x = Math.PI / 2;
+const safeSolid = { x0: 8.25, x1: 9.75, z0: -4.7, z1: -3.2 };
+const regMat = new THREE.Mesh(new THREE.CircleGeometry(1.5, 28), new THREE.MeshBasicMaterial({ map: canvasTex(256, 256, (g, w) => {
+  g.fillStyle = '#f5b92e'; g.beginPath(); g.arc(w / 2, w / 2, 124, 0, 7); g.fill();
+  g.lineWidth = 8; g.strokeStyle = INK; g.setLineDash([22, 14]); g.beginPath(); g.arc(w / 2, w / 2, 112, 0, 7); g.stroke(); g.setLineDash([]);
+  g.fillStyle = INK; g.font = `800 62px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('KASA', w / 2, w / 2 + 6);
+}), transparent: true }));
+regMat.rotation.x = -Math.PI / 2; regMat.position.set(REG.x, 0.05, REG.z); scene.add(regMat);
+
+const PILE = V(8.3, 0, 3.85);
+const pile = { amount: 0, bills: [] };
+function pileSlot(i) {
+  const c = i % 3, r = Math.floor(i / 3) % 4, l = Math.floor(i / 12);
+  return V(7.62 + c * 0.68, 0.6 + l * 0.09, 3.16 + r * 0.46);
+}
+function addToPile(amount, from) {
+  pile.amount += amount;
+  const want = Math.min(60, Math.ceil(pile.amount / 4));
+  let n = 0;
+  while (pile.bills.length < want && n < 6) {
+    const b = spawnItem('bill', from); b.t.copy(pileSlot(pile.bills.length)); b.k = 7; pile.bills.push(b); n++;
+  }
+}
+
+/* ---------- Oyuncu ve yardımcılar ---------- */
+const player = newActor({ body: 0x2c6fbb, skin: 0xf2c6a0, apron: true, mustache: true, cap: 0x2c2a3f }, V(-8, 0, 0), 5);
+const LOOKS = [[0xe4472f, 0x5a3825], [0x8b5fbf, 0x2c2a3f], [0xf5912e, 0xb9804a], [0x36a6c9, 0x2c2a3f], [0xe87fb0, 0x8a5a33], [0x5fb25a, 0xd9d4c8], [0xf5b92e, 0x5a3825]];
+const SKINS = [0xf2c6a0, 0xd9a273, 0xa86f48, 0xf7d9bf];
+let speed = 7;
+let cashier = null;
+const helpers = [];
+
+function tryCollect(e, reach) {
+  if (e.stack.length >= e.cap) return;
+  if ((e.collectT -= tickDt) > 0) return;
+  for (const src of Object.values(sources)) {
+    if (!src.unlocked) continue;
+    const n = nearestRipe(src, e.pos);
+    if (n && n.d < (reach || src.reach)) {
+      const it = n.slot.it; n.slot.it = null; n.slot.t = 0;
+      it.s = 1; it.cur = 1; e.stack.push(it);
+      e.collectT = 0.11;
+      if (e === player) { sfx(420 + e.stack.length * 40, 0.05); }
+      return;
+    }
+  }
+}
+function tryDeposit(e) {
+  if (!e.stack.length) return;
+  if ((e.depositT -= tickDt) > 0) return;
+  for (const sh of Object.values(shelves)) {
+    if (!sh.unlocked || sh.items.length >= sh.cap) continue;
+    if (Math.hypot(sh.stand.x - e.pos.x, sh.stand.z - e.pos.z) > 2.2) continue;
+    for (let i = e.stack.length - 1; i >= 0; i--) {
+      if (e.stack[i].type !== sh.type) continue;
+      const it = e.stack.splice(i, 1)[0];
+      it.t.copy(sh.slots[sh.items.length]); it.k = 12; it.mesh.rotation.y = 0;
+      sh.items.push(it); e.depositT = 0.09;
+      if (e === player) sfx(520, 0.05);
+      return;
+    }
+  }
+}
+/* Personelin ortak üniforması: yeşil gömlek, beyaz önlük; adları başlarının üstünde */
+const STAFF = { body: 0x1f8a70, apron: true };
+function nameTag(actor, text) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ depthTest: false, transparent: true, map: canvasTex(220, 60, (g, w, h) => {
+    g.clearRect(0, 0, w, h); g.fillStyle = '#1f8a70'; roundRect(g, 2, 2, w - 4, h - 4, 20); g.fill();
+    g.fillStyle = '#fffaf0'; g.font = `800 36px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2, h / 2 + 3);
+  }) }));
+  sp.scale.set(1.6, 0.44, 1); sp.position.y = 2.15; sp.renderOrder = 9; actor.rig.g.add(sp);
+}
+function addHelper(i) {
+  const h = newActor(Object.assign({}, STAFF, i ? { skin: 0xf2c6a0, cap: 0x36a6c9 } : { skin: 0xd9a273, cap: 0xf5b92e }), V(-8.5 + i * 2, 0, 0.5), 4);
+  nameTag(h, 'Toplayıcı');
+  h.state = 'pick'; h.shelf = null; helpers.push(h);
+}
+const SAFE_STAND = V(9, 0, -2.5);
+let accountant = null;
+function accountantAI(a, dt) {
+  if (a.state === 'wait') {
+    moveTo(a, SAFE_STAND, 4.4, dt);
+    if (pile.amount >= 20) a.state = 'go';
+  } else if (a.state === 'go') {
+    if (pile.amount <= 0) a.state = 'wait';
+    else if (moveTo(a, V(8.3, 0, 2.3), 4.8, dt)) {
+      a.carried = pile.amount; pile.amount = 0;
+      pile.bills.forEach((b, i) => {
+        if (i < 10) { b.k = 12; a.stack.push(b); } else { b.t.set(a.pos.x, 1.2, a.pos.z); killItem(b, 0.15); }
+      });
+      pile.bills = []; a.state = 'back';
+    }
+  } else if (moveTo(a, SAFE_STAND, 4.8, dt)) {
+    S.money += a.carried; a.carried = 0;
+    a.stack.forEach(b => { b.t.set(9, 1.3, -3.95); b.k = 9; killItem(b, 0.14); });
+    a.stack.length = 0; a.state = 'wait';
+    popMoney(); sfx(990, 0.06); save();
+  }
+}
+function helperAI(h, dt) {
+  if (h.state === 'pick') {
+    const opts = Object.values(shelves)
+      .filter(s => s.unlocked && s.items.length < s.cap && sources[s.type].unlocked && ripeCount(sources[s.type]) > 0)
+      .sort((a, b) => a.items.length - b.items.length);
+    if (opts.length) { h.shelf = opts[0]; h.state = 'get'; } else moveTo(h, V(-8.5, 0, 0.5), 4.6, dt);
+  }
+  if (h.state === 'get') {
+    const n = nearestRipe(sources[h.shelf.type], h.pos);
+    if (h.stack.length >= h.cap || !n) { h.state = h.stack.length ? 'put' : 'pick'; }
+    else { if (n.d > 0.9) moveTo(h, n.slot.pos, 5, dt); else tryCollect(h, 1); }
+  }
+  if (h.state === 'put') {
+    if (moveTo(h, h.shelf.stand, 5, dt)) tryDeposit(h);
+    if (!h.stack.length) h.state = 'pick';
+  }
+}
+
+/* Müşteriler */
+const customers = [], queue = [];
+let spawnT = 2, adBoost = 1;
+const QUEUE_Z = 5.5;
+const queuePos = i => V(4.3 - i * 1.3, 0, QUEUE_Z);
+function openShelves() { return Object.values(shelves).filter(s => s.unlocked); }
+function spawnCustomer() {
+  const shelvesOpen = openShelves();
+  const pick = shelvesOpen[Math.floor(Math.random() * shelvesOpen.length)];
+  const wants = [{ shelf: pick, n: 1 + Math.floor(Math.random() * 2) }];
+  if (shelvesOpen.length > 1 && Math.random() < 0.45) {
+    const other = shelvesOpen.filter(s => s !== pick);
+    wants.push({ shelf: other[Math.floor(Math.random() * other.length)], n: 1 + Math.floor(Math.random() * 2) });
+  }
+  const look = LOOKS[Math.floor(Math.random() * LOOKS.length)];
+  const c = newActor({ body: look[0], hair: look[1], skin: SKINS[Math.floor(Math.random() * SKINS.length)] }, V(32, 0, rnd(10.6, 13)), 99);
+  c.wants = wants; c.state = 'in'; c.takeT = 0.4; c.spot = V(0, 0, 0);
+  c.speed = rnd(3.5, 4.3);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ depthTest: false, transparent: true }));
+  sp.scale.set(1.5, 1.05, 1); sp.position.y = 2.5; sp.renderOrder = 10; sp.visible = false; c.rig.g.add(sp);
+  c.bubble = sp; c.bubbleKey = '';
+  customers.push(c);
+}
+function setBubble(c, type, n) {
+  const key = type ? type + n : '';
+  if (key === c.bubbleKey) return;
+  c.bubbleKey = key; c.bubble.visible = !!type;
+  if (type) { c.bubble.material.map = bubbleTex(type, n); c.bubble.material.needsUpdate = true; }
+}
+function chooseSpot(c) {
+  const s = c.wants[0].shelf.stand;
+  c.spot.set(s.x + rnd(-1.15, 1.15), 0, s.z + rnd(-0.05, 0.55));
+}
+function updateCustomer(c, dt) {
+  if (c.state === 'in') {
+    setBubble(c, null);
+    if (moveTo(c, V(1, 0, 9.4), c.speed, dt)) {
+      c.state = 'go'; chooseSpot(c);
+      sfx(1560, 0.16); sfx(1170, 0.22, 0.12); /* kapı zili */
+    }
+  } else if (c.state === 'go') {
+    setBubble(c, c.wants[0].shelf.type, c.wants[0].n);
+    if (moveTo(c, c.spot, c.speed, dt)) c.state = 'take';
+  } else if (c.state === 'take') {
+    const w = c.wants[0];
+    setBubble(c, w.shelf.type, w.n);
+    c.face = angleTo(c.face, Math.PI, Math.min(1, dt * 8));
+    if ((c.takeT -= dt) <= 0 && w.shelf.items.length) {
+      c.stack.push(w.shelf.items.pop()); c.takeT = 0.4; w.n--;
+      if (!w.n) {
+        c.wants.shift();
+        if (c.wants.length) { c.state = 'go'; chooseSpot(c); } else { c.state = 'queue'; queue.push(c); }
+      }
+    }
+  } else if (c.state === 'queue') {
+    setBubble(c, 'kasa', 0);
+    moveTo(c, queuePos(queue.indexOf(c)), c.speed, dt);
+    if (queue.length) c.face = queue.indexOf(c) === 0 ? angleTo(c.face, Math.PI, Math.min(1, dt * 8)) : c.face;
+  } else if (c.state === 'out' || c.state === 'out2') {
+    setBubble(c, (c.heartT -= dt) > 0 ? 'kalp' : null, 0);
+    if (c.state === 'out') { if (moveTo(c, V(6.4, 0, 7), c.speed, dt)) c.state = 'out2'; }
+    else if (moveTo(c, V(c.exitX, 0, 11.6), c.speed, dt)) c.state = 'street';
+  } else if (c.state === 'street') {
+    if (moveTo(c, V(-36, 0, 11.6), c.speed, dt)) {
+      c.stack.forEach(it => killItem(it, 0));
+      scene.remove(c.rig.g); customers.splice(customers.indexOf(c), 1); return;
+    }
+  }
+}
+let payT = 0, drawerT = 0;
+const nearReg = () => Math.hypot(player.pos.x - REG.x, player.pos.z - REG.z) < 1.6;
+function updateRegister(dt) {
+  drawerT = Math.max(0, drawerT - dt);
+  drawer.position.z += ((drawerT > 0 ? 3.56 : 3.96) - drawer.position.z) * Math.min(1, dt * 12);
+  const head = queue[0];
+  if (!head) { payT = 0; return; }
+  if (head.pos.distanceTo(queuePos(0)) > 0.3) return;
+  if (!(cashier || nearReg())) return;
+  /* Ürünler banda iner, tek tek okutulur, poşetlenir */
+  if (!head.belt) {
+    head.belt = head.stack.splice(0);
+    head.total = head.belt.reduce((sum, it) => sum + PRODUCT[it.type].price, 0);
+    const gap = Math.min(0.42, 1.2 / head.belt.length);
+    head.belt.forEach((it, i) => { it.t.set(3.4 + i * gap, 1.18 + HEIGHT[it.type] / 2, 4.22); it.k = 9; it.arc = 0.3; });
+    setDisplay('₺' + head.total);
+  }
+  beltTex.offset.x -= dt * 0.9;
+  const t = head.belt[0];
+  if (t) {
+    t.t.x += dt * 2.4;
+    if (t.t.x > 5.3) { head.belt.shift(); killItem(t, 0); sfx(1900, 0.05); }
+    return;
+  }
+  payT += dt;
+  if (payT < (cashier ? 0.3 : 0.15)) return;
+  payT = 0;
+  queue.shift();
+  head.stack.push(spawnItem('poset', V(4.9, 1.3, 4.6)));
+  addToPile(head.total, V(6.15, 1.4, 3.7));
+  S.earned += head.total;
+  head.state = 'out'; head.heartT = 1.2; head.exitX = rnd(3, 9);
+  drawerT = 0.7;
+  sfx(880, 0.09); sfx(1320, 0.11, 0.07);
+}
+function updatePile() {
+  if (pile.amount <= 0) return;
+  if (Math.hypot(player.pos.x - PILE.x, player.pos.z - PILE.z) > 2.4) return;
+  S.money += pile.amount; pile.amount = 0;
+  pile.bills.forEach((b, i) => {
+    b.t.set(player.pos.x, 1.3, player.pos.z); b.k = 9 + i % 5; b.arc = 0.2; killItem(b, 0.16 + i * 0.008);
+  });
+  pile.bills = [];
+  popMoney(); sfx(990, 0.08); sfx(1240, 0.08, 0.06); sfx(1480, 0.1, 0.12);
+  save();
+}
+
+/* ---------- Açılacak yerler ---------- */
+const S = { money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false };
+const PADS = [
+  { id: 'domTarla', name: 'Domates bahçesi', cost: 25, x: -15.6, z: 4.2, minEarned: 1 },
+  { id: 'domRaf', name: 'Domates rafı', cost: 20, x: -2, z: -1.6, req: ['domTarla'] },
+  { id: 'canta', name: 'Geniş sepet', cost: 30, x: -6.5, z: 0.7, req: ['domRaf'] },
+  { id: 'ayakkabi', name: 'Rahat terlik', cost: 40, x: -3.4, z: 0.7, req: ['domRaf'] },
+  { id: 'kasiyer', name: 'Kasiyer tut', cost: 80, x: 1.6, z: 2.3, req: ['domRaf'] },
+  { id: 'cirak', name: 'Toplayıcı tut', cost: 140, x: -3.4, z: 3.6, req: ['kasiyer'] },
+  { id: 'tabela', name: 'Mahalleye ilan', cost: 150, x: -0.4, z: 0.7, req: ['kasiyer'] },
+  { id: 'firin', name: 'Taş fırın', cost: 120, x: 15, z: -2.6, req: ['kasiyer'] },
+  { id: 'ekmekRaf', name: 'Ekmek rafı', cost: 80, x: 2, z: -1.6, req: ['firin'] },
+  { id: 'canta2', name: 'Dev sepet', cost: 120, x: -6.5, z: 3.6, req: ['canta', 'firin'] },
+  { id: 'muhasebe', name: 'Muhasebeci tut', cost: 220, x: 3.4, z: 0, req: ['ekmekRaf', 'cirak'] },
+  { id: 'ayranHane', name: 'Ayran makinesi', cost: 260, x: 15, z: 3.8, req: ['ekmekRaf'] },
+  { id: 'ayranRaf', name: 'Ayran dolabı', cost: 180, x: 6, z: -1.6, req: ['ayranHane'] },
+  { id: 'cirak2', name: 'İkinci toplayıcı', cost: 350, x: -0.4, z: 3.6, req: ['ayranRaf', 'cirak'] },
+];
+const pops = [];
+function reveal(group, anim) { group.visible = true; if (anim) pops.push({ o: group, t: 0 }); }
+function openSource(type, anim) {
+  const s = sources[type]; s.unlocked = true; reveal(s.group, anim); fillSlots(s, true);
+  if (s.solid) solids.push(s.solid);
+}
+function openShelf(type, anim) { const s = shelves[type]; s.unlocked = true; reveal(s.group, anim); solids.push(s.solid); }
+function applyUnlock(id, anim) {
+  switch (id) {
+    case 'domTarla': openSource('domates', anim); break;
+    case 'domRaf': openShelf('domates', anim); break;
+    case 'canta': player.cap += 3; break;
+    case 'canta2': player.cap += 5; break;
+    case 'ayakkabi': speed = 8.6; break;
+    case 'kasiyer':
+      cashier = newActor(Object.assign({}, STAFF, { skin: 0xd9a273, hair: 0x2c2a3f }), REG, 1);
+      nameTag(cashier, 'Kasiyer');
+      updateActor(cashier, 0); if (anim) pops.push({ o: cashier.rig.g, t: 0 }); break;
+    case 'muhasebe':
+      accountant = newActor(Object.assign({}, STAFF, { skin: 0xf7d9bf, hair: 0x8a5a33 }), SAFE_STAND, 99);
+      nameTag(accountant, 'Muhasebeci');
+      accountant.state = 'wait'; accountant.carried = 0;
+      reveal(safeGroup, anim); solids.push(safeSolid); break;
+    case 'tabela': adBoost = 0.6; break;
+    case 'firin': openSource('ekmek', anim); break;
+    case 'ekmekRaf': openShelf('ekmek', anim); break;
+    case 'cirak': addHelper(0); break;
+    case 'ayranHane': openSource('ayran', anim); break;
+    case 'ayranRaf': openShelf('ayran', anim); break;
+    case 'cirak2': addHelper(1); break;
+  }
+}
+const padGeo = new THREE.PlaneGeometry(2.8, 2.8);
+PADS.forEach(p => {
+  const g = new THREE.Group(); g.position.set(p.x, 0.07, p.z); g.rotation.x = -Math.PI / 2; g.visible = false; scene.add(g);
+  const fill = new THREE.Mesh(new THREE.PlaneGeometry(2.72, 2.72), new THREE.MeshBasicMaterial({ color: 0x7fd089 }));
+  fill.position.z = 0.01; fill.scale.y = 0.001; g.add(fill);
+  const base = new THREE.Mesh(padGeo, new THREE.MeshBasicMaterial({ color: 0xfffaf0 })); g.add(base);
+  const c = document.createElement('canvas'); c.width = c.height = 280;
+  const tex = new THREE.CanvasTexture(c);
+  const face = new THREE.Mesh(padGeo, new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+  face.position.z = 0.02; g.add(face);
+  Object.assign(p, { group: g, fill, tex, ctx: c.getContext('2d'), paid: 0, stand: 0, lastLeft: -1 });
+});
+function drawPad(p) {
+  const left = Math.ceil(p.cost - p.paid);
+  if (left === p.lastLeft) return;
+  p.lastLeft = left;
+  const g = p.ctx, w = 280; g.clearRect(0, 0, w, w);
+  g.lineWidth = 11; g.strokeStyle = INK; g.setLineDash([26, 15]);
+  roundRect(g, 10, 10, w - 20, w - 20, 26); g.stroke(); g.setLineDash([]);
+  g.fillStyle = INK; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const words = p.name.split(' ');
+  g.font = `800 ${p.name.length > 12 ? 44 : 50}px ${FONT}`;
+  words.length > 1 ? (g.fillText(words[0], w / 2, 76), g.fillText(words.slice(1).join(' '), w / 2, 126)) : g.fillText(p.name, w / 2, 100);
+  g.font = `800 66px ${FONT}`; g.fillStyle = '#c23520'; g.fillText('₺' + left, w / 2, 204);
+  p.tex.needsUpdate = true;
+}
+const padOpen = p => !S.unlocked[p.id] && (p.req || []).every(r => S.unlocked[r]) && S.earned >= (p.minEarned || 0);
+function padsNow() { return PADS.filter(padOpen); }
+function updatePads(dt) {
+  PADS.forEach(p => {
+    const show = padOpen(p);
+    if (show !== p.group.visible) { p.group.visible = show; if (show) pops.push({ o: p.group, t: 0 }); }
+    if (!show) return;
+    drawPad(p);
+    const on = Math.abs(player.pos.x - p.x) < 1.45 && Math.abs(player.pos.z - p.z) < 1.45;
+    p.stand = on ? p.stand + dt : 0;
+    if (on && p.stand > 0.2 && S.money >= 1) {
+      const pay = Math.min(Math.max(p.cost / 1.3, 22) * dt, S.money, p.cost - p.paid);
+      S.money -= pay; p.paid += pay;
+      p.fill.scale.y = Math.max(0.001, p.paid / p.cost);
+      p.fill.position.y = -1.36 + 1.36 * p.paid / p.cost;
+      p.flow = (p.flow || 0) + dt;
+      if (p.flow > 0.07) {
+        p.flow = 0;
+        const b = spawnItem('bill', V(player.pos.x, 1.2, player.pos.z)); b.t.set(p.x, 0.15, p.z); b.k = 10; killItem(b, 0.14);
+        sfx(660 + 500 * p.paid / p.cost, 0.03);
+      }
+      if (p.paid >= p.cost - 0.001) {
+        S.unlocked[p.id] = true; p.group.visible = false;
+        applyUnlock(p.id, true); confetti(V(p.x, 1, p.z)); sfx(660, 0.1); sfx(880, 0.1, 0.09); sfx(1320, 0.16, 0.18);
+        toast(p.name + ' açıldı!', 1500);
+        save();
+      }
+    }
+  });
+}
+function updatePops(dt) {
+  for (let i = pops.length - 1; i >= 0; i--) {
+    const p = pops[i]; p.t = Math.min(1, p.t + dt * 2.6);
+    const t = p.t, s = 1 + 2.7 * Math.pow(t - 1, 3) + 1.7 * Math.pow(t - 1, 2);
+    p.o.scale.setScalar(Math.max(0.01, s));
+    if (t >= 1) { p.o.scale.setScalar(1); pops.splice(i, 1); }
+  }
+}
+
+/* Konfeti */
+const bits = [];
+const bitGeo = new THREE.BoxGeometry(0.16, 0.16, 0.05);
+const bitMats = [0xe4472f, 0xf5b92e, 0x36a6c9, 0x3f9b5a, 0xfffaf0].map(c => new THREE.MeshBasicMaterial({ color: c }));
+function confetti(pos) {
+  if (reducedMotion) return;
+  for (let i = 0; i < 34; i++) {
+    const m = new THREE.Mesh(bitGeo, bitMats[i % 5]); m.position.copy(pos); scene.add(m);
+    bits.push({ m, v: V(rnd(-5, 5), rnd(6, 11), rnd(-5, 5)), life: 1.5 });
+  }
+}
+function updateBits(dt) {
+  for (let i = bits.length - 1; i >= 0; i--) {
+    const b = bits[i]; b.life -= dt; b.v.y -= 20 * dt;
+    b.m.position.addScaledVector(b.v, dt); b.m.rotation.x += dt * 9; b.m.rotation.y += dt * 7;
+    if (b.life < 0 || b.m.position.y < 0) { scene.remove(b.m); bits.splice(i, 1); }
+  }
+}
+
+/* ---------- Yol gösterici ---------- */
+const guide = mesh(new THREE.ConeGeometry(0.5, 0.95, 4), new THREE.MeshBasicMaterial({ color: 0xe4472f }), 0, 3, 0);
+guide.rotation.x = Math.PI; guide.castShadow = false; scene.add(guide);
+const chevGeo = new THREE.BufferGeometry().setFromPoints([V(0, 0, 0.62), V(-0.4, 0, -0.18), V(0.4, 0, -0.18)]);
+chevGeo.setIndex([0, 2, 1]); chevGeo.computeVertexNormals();
+const chevron = new THREE.Mesh(chevGeo, new THREE.MeshBasicMaterial({ color: 0xe4472f, side: THREE.DoubleSide })); scene.add(chevron);
+
+function hintNow() {
+  if (isTouch && !S.walked) return { text: 'Parmağını ekranda sürükleyerek yürü', at: sources.karpuz.center, y: 2 };
+  if (!cashier && queue.length && !nearReg()) return { text: 'Müşteri kasada bekliyor', at: REG, y: 1.4 };
+  if (!accountant && pile.amount > 0 && (pile.amount >= 12 || !padsNow().some(p => S.money >= p.cost - p.paid))) return { text: 'Kasanın yanındaki parayı topla', at: PILE, y: 1.8 };
+  const pad = padsNow().find(p => S.money >= p.cost - p.paid);
+  if (pad) return { text: `${pad.name} için kareye bas`, at: V(pad.x, 0, pad.z), y: 0.8 };
+  if (player.stack.length) {
+    const it = player.stack[player.stack.length - 1], sh = shelves[it.type];
+    if (sh.unlocked) return { text: `${PRODUCT[it.type].name} rafa diz`, at: sh.stand, y: 2.6 };
+  }
+  const need = openShelves().filter(s => sources[s.type].unlocked).sort((a, b) => a.items.length / a.cap - b.items.length / b.cap)[0];
+  if (player.stack.length >= player.cap) return { text: 'Sepetin dolu, ürünü rafına götür', at: shelves[player.stack[0].type].stand, y: 2.6 };
+  return { text: `${PRODUCT[need.type].name} topla`, at: sources[need.type].center, y: 2 };
+}
+let hintT = 0, curHint = null, lastHintText = '';
+function updateGuide(dt, time) {
+  if ((hintT -= dt) <= 0) {
+    hintT = 0.2; curHint = hintNow();
+    if (curHint.text !== lastHintText) { lastHintText = curHint.text; $('hint').textContent = curHint.text; }
+  }
+  const h = curHint, d = Math.hypot(h.at.x - player.pos.x, h.at.z - player.pos.z);
+  guide.position.set(h.at.x, h.y + 1 + Math.sin(time * 5) * 0.22, h.at.z);
+  guide.rotation.y = time * 1.5;
+  guide.visible = d > 1.6;
+  chevron.visible = d > 4.5;
+  if (chevron.visible) {
+    const a = Math.atan2(h.at.x - player.pos.x, h.at.z - player.pos.z);
+    chevron.position.set(player.pos.x + Math.sin(a) * 1.7, 0.09, player.pos.z + Math.cos(a) * 1.7);
+    chevron.rotation.y = a;
+  }
+}
+
+/* ---------- Giriş ---------- */
+const keys = {};
+const KEYMAP = { KeyW: [0, 1], ArrowUp: [0, 1], KeyS: [0, -1], ArrowDown: [0, -1], KeyA: [-1, 0], ArrowLeft: [-1, 0], KeyD: [1, 0], ArrowRight: [1, 0] };
+addEventListener('keydown', e => { if (KEYMAP[e.code]) { keys[e.code] = true; e.preventDefault(); unlockAudio(); } });
+addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; stick.id = null; hideStick(); });
+const stick = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
+const base = $('stickBase'), knob = $('stickKnob');
+function hideStick() { base.hidden = knob.hidden = true; stick.x = stick.y = 0; }
+canvas.addEventListener('pointerdown', e => {
+  unlockAudio(); canvas.focus({ preventScroll: true });
+  stick.id = e.pointerId; stick.ox = e.clientX; stick.oy = e.clientY; stick.x = stick.y = 0;
+  canvas.setPointerCapture(e.pointerId);
+  base.hidden = knob.hidden = false;
+  base.style.left = knob.style.left = e.clientX + 'px'; base.style.top = knob.style.top = e.clientY + 'px';
+});
+canvas.addEventListener('pointermove', e => {
+  if (e.pointerId !== stick.id) return;
+  let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy; const d = Math.hypot(dx, dy), max = 50;
+  if (d > max) { dx *= max / d; dy *= max / d; }
+  stick.x = dx / max; stick.y = -dy / max;
+  knob.style.left = stick.ox + dx + 'px'; knob.style.top = stick.oy + dy + 'px';
+});
+function endStick(e) { if (e.pointerId === stick.id) { stick.id = null; hideStick(); } }
+canvas.addEventListener('pointerup', endStick);
+canvas.addEventListener('pointercancel', endStick);
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function movePlayer(dt) {
+  let ix = stick.x, iy = stick.y;
+  for (const k in KEYMAP) if (keys[k]) { ix += KEYMAP[k][0]; iy += KEYMAP[k][1]; }
+  const len = Math.hypot(ix, iy);
+  if (len < 0.08) return;
+  if (len > 1) { ix /= len; iy /= len; }
+  const cy = Math.cos(YAW), sy = Math.sin(YAW);
+  const wx = cy * ix - sy * iy, wz = -sy * ix - cy * iy;
+  player.pos.x += wx * speed * dt; player.pos.z += wz * speed * dt;
+  player.face = angleTo(player.face, Math.atan2(wx, wz), Math.min(1, dt * 14));
+  player.moving = true; S.walked = true;
+  const R = 0.45;
+  solids.forEach(s => {
+    const nx = Math.max(s.x0, Math.min(player.pos.x, s.x1)), nz = Math.max(s.z0, Math.min(player.pos.z, s.z1));
+    const dx = player.pos.x - nx, dz = player.pos.z - nz, d = Math.hypot(dx, dz);
+    if (d < R) {
+      if (d > 0.0001) { player.pos.x = nx + dx / d * R; player.pos.z = nz + dz / d * R; }
+      else {
+        const opts = [[player.pos.x - s.x0, -1, 0], [s.x1 - player.pos.x, 1, 0], [player.pos.z - s.z0, 0, -1], [s.z1 - player.pos.z, 0, 1]].sort((a, b) => a[0] - b[0])[0];
+        player.pos.x += opts[1] * (opts[0] + R); player.pos.z += opts[2] * (opts[0] + R);
+      }
+    }
+  });
+  player.pos.x = Math.max(-23, Math.min(22, player.pos.x));
+  player.pos.z = Math.max(-4.6, Math.min(14, player.pos.z));
+}
+
+/* ---------- Ses ---------- */
+let ac = null;
+function unlockAudio() {
+  if (!S.sound) return;
+  try {
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (!ac && C) ac = new C();
+    if (ac && ac.state !== 'running') ac.resume();
+  } catch (e) { ac = null; }
+}
+function sfx(freq, dur, delay) {
+  if (!ac || !S.sound) return;
+  try {
+    const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'triangle'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.07, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur + 0.06);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.08);
+  } catch (e) { /* ses isteğe bağlı */ }
+}
+
+/* ---------- Arayüz ---------- */
+function popMoney() { const m = $('money'); m.classList.add('pop'); setTimeout(() => m.classList.remove('pop'), 140); }
+let toastTimer = 0;
+function toast(text, ms) {
+  const t = $('toast'); t.textContent = text; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms);
+}
+let lastMoney = -1, lastBag = '', lastStaff = '';
+function updateHud() {
+  const m = Math.floor(S.money);
+  if (m !== lastMoney) { lastMoney = m; $('money').textContent = '₺' + m.toLocaleString('tr-TR'); }
+  const bag = player.stack.length + '/' + player.cap;
+  if (bag !== lastBag) { lastBag = bag; $('bag').textContent = 'Sepet ' + bag; $('bag').classList.toggle('full', player.stack.length >= player.cap); }
+  const staff = 'Çalışan ' + ((cashier ? 1 : 0) + helpers.length + (accountant ? 1 : 0)) + '/4';
+  if (staff !== lastStaff) { lastStaff = staff; $('staff').textContent = staff; }
+  const done = PADS.filter(p => S.unlocked[p.id]).length;
+  $('progressFill').style.width = (done / PADS.length * 100) + '%';
+  if (done === PADS.length && !S.done) { S.done = true; toast('Mahallenin en sevilen bakkalı sensin!', 4500); confetti(V(player.pos.x, 2, player.pos.z)); save(); }
+}
+
+/* ---------- Menüler ---------- */
+let gameState = 'menu';
+const PANELS = ['pMain', 'pPause', 'pHow', 'pSettings', 'pInstall'];
+function showPanel(id) { PANELS.forEach(p => { $(p).hidden = p !== id; }); $('menu').scrollTop = 0; }
+function syncSettings() {
+  $('btnSound').textContent = 'Ses: ' + (S.sound ? 'Açık' : 'Kapalı');
+  $('btnQuality').textContent = 'Grafik: ' + (S.quality === 'low' ? 'Düşük' : 'Yüksek');
+}
+function applyQuality() {
+  const low = S.quality === 'low';
+  renderer.setPixelRatio(Math.min(devicePixelRatio, low ? 1.25 : 2));
+  renderer.shadowMap.enabled = !low; sun.castShadow = !low;
+  scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; }); });
+  resize(); syncSettings();
+}
+function syncMainMenu() {
+  const started = S.earned > 0 || S.money > 0, done = PADS.filter(p => S.unlocked[p.id]).length;
+  $('btnPlay').textContent = started ? 'Devam et' : 'Oyna';
+  $('saveInfo').hidden = !started;
+  $('saveInfo').textContent = `₺${Math.floor(S.money + pile.amount).toLocaleString('tr-TR')} · ${done}/${PADS.length} açıldı`;
+}
+function setPlaying(on) {
+  $('menu').hidden = on;
+  $('hud').hidden = $('progress').hidden = gameState === 'menu';
+  if (on) { unlockAudio(); canvas.focus({ preventScroll: true }); } else { stick.id = null; hideStick(); }
+}
+function play() { gameState = 'play'; camK = 2.5; setPlaying(true); updateHud(); lastT = performance.now(); }
+function pause() {
+  if (gameState !== 'play') return;
+  gameState = 'pause'; save(); showPanel('pPause'); setPlaying(false);
+}
+function goHome() { gameState = 'menu'; save(); syncMainMenu(); showPanel('pMain'); setPlaying(false); }
+$('btnPlay').addEventListener('click', play);
+$('btnResume').addEventListener('click', play);
+$('btnHome').addEventListener('click', goHome);
+$('pauseBtn').addEventListener('click', pause);
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => showPanel(b.dataset.go)));
+document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => showPanel(gameState === 'menu' ? 'pMain' : 'pPause')));
+addEventListener('keydown', e => {
+  if (e.code !== 'Escape' && e.code !== 'KeyP') return;
+  if (gameState === 'play') pause(); else if (gameState === 'pause') play();
+});
+const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+$('btnInstall').hidden = !isIOS || standalone;
+$('btnSound').addEventListener('click', () => { S.sound = !S.sound; syncSettings(); if (S.sound) unlockAudio(); save(); });
+$('btnQuality').addEventListener('click', () => { S.quality = S.quality === 'low' ? 'high' : 'low'; autoLowDone = true; applyQuality(); save(); });
+let resetArmed = false;
+$('btnReset').addEventListener('click', () => {
+  const b = $('btnReset');
+  if (!resetArmed) {
+    resetArmed = true; b.textContent = 'Eminsen tekrar dokun'; b.classList.add('danger');
+    setTimeout(() => { resetArmed = false; b.textContent = 'İlerlemeyi sıfırla'; b.classList.remove('danger'); }, 3000);
+    return;
+  }
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* kayıt yoksa sorun değil */ }
+  noSave = true; location.reload();
+});
+
+/* ---------- Kayıt ---------- */
+const SAVE_KEY = 'kose-bakkal-v1';
+let noSave = false;
+function save() {
+  if (noSave) return;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
+}
+function load() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { d = null; }
+  if (!d) return;
+  S.money = +d.money || 0; S.earned = +d.earned || 0; S.done = !!d.done; S.sound = d.sound !== false;
+  if (d.quality === 'low') S.quality = 'low';
+  PADS.forEach(p => {
+    if (d.unlocked && d.unlocked[p.id]) { S.unlocked[p.id] = true; applyUnlock(p.id, false); }
+    else if (d.paid && d.paid[p.id]) { p.paid = Math.min(d.paid[p.id], p.cost - 1); p.fill.scale.y = p.paid / p.cost; p.fill.position.y = -1.36 + 1.36 * p.paid / p.cost; }
+  });
+}
+addEventListener('pagehide', save);
+document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); pause(); } });
+
+/* ---------- Başlangıç ---------- */
+openSource('karpuz', false);
+openShelf('karpuz', false);
+load();
+applyQuality();
+syncMainMenu();
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { /* çevrimdışı kullanım isteğe bağlı */ }
+}
+if (document.fonts && document.fonts.load) {
+  Promise.all([document.fonts.load(`800 40px "Baloo 2"`), document.fonts.ready]).then(() => {
+    allTex.forEach(e => { e.draw(e.c.getContext('2d'), e.c.width, e.c.height); e.t.needsUpdate = true; });
+    PADS.forEach(p => { p.lastLeft = -1; });
+    const shown = dispText; dispText = null; setDisplay(shown);
+  }).catch(() => {});
+}
+
+/* ---------- Döngü ---------- */
+let tickDt = 0, lastT = performance.now(), saveT = 0;
+const camTarget = V(0, 0, 0), camLook = player.pos.clone();
+const viewPos = V(0, 19, 32), viewLook = V(0, 0.6, 2), wantLook = V(0, 0, 0);
+let camK = 1.5, autoLowDone = false, fpsT = 0, fpsN = 0;
+function watchFps(realDt) {
+  if (autoLowDone || S.quality === 'low' || realDt > 1) return;
+  fpsT += realDt; fpsN++;
+  if (fpsT < 4) return;
+  if (fpsN / fpsT < 26) { autoLowDone = true; S.quality = 'low'; applyQuality(); toast('Akıcı oynaman için grafik düşürüldü', 2200); save(); }
+  fpsT = fpsN = 0;
+}
+function step(dt, time) {
+  tickDt = dt;
+  movePlayer(dt);
+  tryCollect(player);
+  tryDeposit(player);
+  updateSources(dt);
+  if ((spawnT -= dt) <= 0) {
+    const open = openShelves().length;
+    spawnT = 6 * adBoost / (1 + 0.22 * (open - 1)) * rnd(0.8, 1.2);
+    if (customers.length < 3 + open * 2) spawnCustomer();
+  }
+  for (let i = customers.length - 1; i >= 0; i--) { const c = customers[i]; updateCustomer(c, dt); if (customers.includes(c)) updateActor(c, dt); }
+  updateRegister(dt);
+  updatePile();
+  helpers.forEach(h => { helperAI(h, dt); updateActor(h, dt); });
+  updateActor(player, dt);
+  if (cashier) { cashier.face = 0; updateActor(cashier, dt); }
+  if (accountant) { accountantAI(accountant, dt); updateActor(accountant, dt); }
+  updatePads(dt);
+  updateItems(dt);
+  updatePops(dt);
+  updateBits(dt);
+  updateGuide(dt, time);
+  updateHud();
+  if ((saveT += dt) > 5) { saveT = 0; save(); }
+}
+function frame(now) {
+  requestAnimationFrame(frame);
+  const realDt = Math.max(0, (now - lastT) / 1000), dt = Math.min(0.05, realDt); lastT = now;
+  const time = now / 1000;
+  if (gameState === 'play') { step(dt, time); watchFps(realDt); }
+  catBody.scale.y = 0.8 + Math.sin(time * 2) * 0.03;
+  if (gameState === 'menu') {
+    /* Ana menüde kamera dükkânın çevresinde yavaşça döner */
+    const a = 0.5 + Math.sin(time * 0.1) * 0.75, r = 30 * camScale;
+    camTarget.set(Math.sin(a) * r, 19 * camScale, 2 + Math.cos(a) * r);
+    wantLook.set(0, 0.6, 2); camK = 1.5;
+    guide.visible = chevron.visible = false;
+  } else {
+    camLook.lerp(player.pos, 1 - Math.exp(-6 * dt));
+    camTarget.copy(CAM).multiplyScalar(camScale).add(camLook);
+    wantLook.set(camLook.x, 0.6, camLook.z);
+    camK = Math.min(40, camK + dt * 30);
+  }
+  const blend = 1 - Math.exp(-camK * dt);
+  viewPos.lerp(camTarget, blend); viewLook.lerp(wantLook, blend);
+  camera.position.copy(viewPos);
+  camera.lookAt(viewLook);
+  sun.position.set(viewLook.x + 12, 34, viewLook.z + 14);
+  sun.target.position.set(viewLook.x, 0, viewLook.z);
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(frame);
+
+/* Test ve geliştirme için durum */
+window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, PADS, helpers, step, get accountant() { return accountant; } };
+})();
+</script>
