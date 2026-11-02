@@ -111,6 +111,16 @@ body {
   width: min(280px, calc(100% - 64px)); height: 16px;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 10px; overflow: hidden;
 }
+#shelfBtn {
+  position: fixed; pointer-events: auto; touch-action: none; cursor: pointer;
+  left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  max-width: calc(100% - 140px); min-height: 48px; padding: 4px 12px;
+  font: 800 15px var(--font); line-height: 1.15; text-align: left; color: var(--ink);
+  background: #cfcad3; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+}
+#shelfBtn.afford { background: var(--mustard); }
+#shelfBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+@media (max-height: 460px) { #shelfBtn { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); } }
 /* Parmak sağ altta rahat ulaşsın; hırsız uzaktaysa soluk, yakındaysa parlak */
 #hitBtn {
   position: fixed; pointer-events: auto; touch-action: none; cursor: pointer;
@@ -221,6 +231,7 @@ body {
   </div>
   <div id="hint" class="sticker">Karpuz topla</div>
   <button id="hitBtn" type="button" aria-label="Hırsıza vur" hidden>VUR</button>
+  <button id="shelfBtn" type="button" hidden></button>
 </div>
 <div id="menu">
   <div id="pMain" class="panel">
@@ -251,6 +262,7 @@ body {
         <li>Fiyatlı karelere basıp yeni yer aç, çalışan tut.</li>
         <li>Müşteriyi bekletme: balonu kızarınca sabrı bitiyor. Kızıp giderse yıldızın düşer, yıldızın yüksekse bahşiş alırsın.</li>
         <li>Hırsız gelince yanına koş ve VUR düğmesine bas. Düşürdüğü ürünleri toplayıp rafına geri koy.</li>
+        <li>Rafın önüne gelince çıkan düğmeyle rafı büyüt. Fazla ürünleri kasanın sağındaki çöp kutusuna at.</li>
       </ol>
     </div>
     <button class="menuBtn primary" type="button" data-back>Tamam</button>
@@ -864,7 +876,7 @@ function makeShelf(type, x, sz, cold) {
   box(3.2, 0.5, 0.7, m2, 0, 0.25, 0.35, g);
   box(3.2, 1, 0.7, m1, 0, 0.5, -0.32, g);
   const slots = [];
-  [0, 1].forEach(layer => [[0.35, 0.5], [-0.32, 1]].forEach(row => [-1, 0, 1].forEach(c => {
+  [0, 1, 2].forEach(layer => [[0.35, 0.5], [-0.32, 1]].forEach(row => [-1, 0, 1].forEach(c => {
     slots.push(V(x + c * 0.92, row[1] + HEIGHT[type] * (0.56 + layer), sz + row[0]));
   })));
   /* Fiyat etiketi */
@@ -873,7 +885,11 @@ function makeShelf(type, x, sz, cold) {
     c.fillText(`${PRODUCT[type].name} ₺${PRODUCT[type].price}`, w / 2, h / 2 + 2);
   }) }));
   tag.position.set(0, 0.26, 0.72); g.add(tag);
-  return shelves[type] = { type, group: g, x, slots, items: [], cap: slots.length, stand: V(x, 0, sz + 1.5), unlocked: false, solid: { x0: x - 1.65, x1: x + 1.65, z0: sz - 0.8, z1: sz + 0.75 } };
+  /* Yükseltilen raf önünde altın şerit taşır */
+  const strips = [0.08, 0.46].map(y => {
+    const s = box(3.2, 0.07, 0.03, M.mustard, 0, y, 0.72, g); s.visible = false; s.castShadow = false; return s;
+  });
+  return shelves[type] = { type, group: g, x, slots, strips, items: [], cap: 12, stand: V(x, 0, sz + 1.5), unlocked: false, solid: { x0: x - 1.65, x1: x + 1.65, z0: sz - 0.8, z1: sz + 0.75 } };
 }
 makeShelf('karpuz', -6, -3.8); makeShelf('domates', -2, -3.8); makeShelf('ekmek', 2, -3.8); makeShelf('ayran', 6, -3.8);
 /* İkinci sıra reyon; arasında ve sağında geçiş koridoru var */
@@ -1437,7 +1453,7 @@ function spawnThief() {
   nameTag(thief, 'HIRSIZ', '#c23520');
   thief.state = 'in'; thief.path = [V(-0.3, 0, 10.6), V(-0.3, 0, 7.4)];
   thief.want = 1 + Math.floor(Math.random() * 3); thief.stealT = 0.7; thief.hit = false; thief.target = null;
-  toast('Hırsız geldi! Yakala ve vur', 2200);
+  toast(guard ? 'Hırsız geliyor, güvenlik kapıda' : 'Hırsız geldi! Yakala ve vur', 2200);
   sfx(740, 0.16); sfx(520, 0.16, 0.18); sfx(740, 0.16, 0.36); sfx(520, 0.18, 0.54);
 }
 function removeThief() {
@@ -1449,9 +1465,12 @@ function removeThief() {
 function hitThief() {
   if (!thief || thief.hit || gameState !== 'play') return;
   if (Math.hypot(thief.pos.x - player.pos.x, thief.pos.z - player.pos.z) > HIT_RANGE) { sfx(240, 0.06); return; }
+  strikeThief(player);
+}
+function strikeThief(by) {
   thief.hit = true;
-  player.face = Math.atan2(thief.pos.x - player.pos.x, thief.pos.z - player.pos.z);
-  player.rig.armR.position.z = 1; player.rig.armL.position.z = 1;
+  by.face = Math.atan2(thief.pos.x - by.pos.x, thief.pos.z - by.pos.z);
+  by.rig.armR.position.z = 1; by.rig.armL.position.z = 1;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: powTex, depthTest: false, transparent: true }));
   sp.position.set(thief.pos.x, 1.6, thief.pos.z); sp.renderOrder = 11; scene.add(sp);
   powFx = { sp, t: 0 };
@@ -1463,10 +1482,71 @@ function hitThief() {
     it.k = 8; it.arc = 0.5; dropped.push(it);
   });
   thief.stack.length = 0;
-  toast(had ? 'Hırsız ürünleri düşürdü! Topla ve rafına koy' : 'Hırsız korkup kaçtı', 2000);
+  toast(had ? 'Hırsız ürünleri düşürdü! Topla ve rafına koy' : by === guard ? 'Güvenlik hırsızı kapıdan kovdu' : 'Hırsız korkup kaçtı', 2000);
   changeRep(3);
   thief.state = 'stun'; thief.stunT = 0.45;
 }
+/* Kapı güvenliği: dükkânın önüne gelen hırsızı kendisi yakalar */
+const GUARD_POST = V(1.9, 0, 11);
+let guard = null;
+function guardAI(dt) {
+  const t = thief, watching = t && !t.hit && t.pos.z > 9.1 && Math.hypot(t.pos.x - GUARD_POST.x, t.pos.z - GUARD_POST.z) < 9;
+  if (watching) {
+    if (Math.hypot(t.pos.x - guard.pos.x, t.pos.z - guard.pos.z) < 1.5) strikeThief(guard);
+    else moveTo(guard, t.pos, 8, dt);
+  } else if (moveTo(guard, GUARD_POST, 4.5, dt)) guard.face = 0;
+  updateActor(guard, dt);
+}
+
+/* Çöp kutusu: yanına gelince sepetteki ürünler boşalır */
+const BIN = V(9.3, 0, 5.75);
+mesh(new THREE.CylinderGeometry(0.42, 0.34, 1, 12), mat(0x2f6b4f), BIN.x, 0.5, BIN.z);
+mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.08, 12), M.ink, BIN.x, 1.04, BIN.z);
+const binWord = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, map: canvasTex(128, 56, (g, w, h) => {
+  g.clearRect(0, 0, w, h); g.fillStyle = '#2f6b4f'; roundRect(g, 2, 2, w - 4, h - 4, 14); g.fill();
+  g.fillStyle = '#fffaf0'; g.font = `800 36px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('ÇÖP', w / 2, h / 2 + 3);
+}) }));
+binWord.position.set(BIN.x, 1.5, BIN.z); binWord.scale.set(0.9, 0.4, 1); binWord.renderOrder = 8; scene.add(binWord);
+solids.push({ x0: BIN.x - 0.38, x1: BIN.x + 0.38, z0: BIN.z - 0.38, z1: BIN.z + 0.38 });
+let trashT = 0;
+function updateTrash(dt) {
+  if ((trashT -= dt) > 0 || !player.stack.length) return;
+  if (Math.hypot(player.pos.x - BIN.x, player.pos.z - BIN.z) > 1.35) return;
+  trashT = 0.1;
+  const it = player.stack.pop();
+  it.t.set(BIN.x, 1.1, BIN.z); it.k = 12; killItem(it, 0.12);
+  markHint('trash'); sfx(300, 0.05);
+}
+
+/* Raf yükseltme: 12 → 15 → 18 */
+const shelfNext = sh => (sh.cap >= 18 ? 0 : Math.round((60 + PRODUCT[sh.type].price * 10) * (sh.cap === 15 ? 2 : 1) / 10) * 10);
+function setShelfCap(sh, cap) {
+  sh.cap = cap;
+  sh.strips[0].visible = cap >= 15; sh.strips[1].visible = cap >= 18;
+}
+let shelfHere = null, shelfLabel = '';
+function updateShelfBtn() {
+  shelfHere = null;
+  Object.values(shelves).forEach(sh => {
+    if (sh.unlocked && sh.cap < 18 && Math.hypot(sh.stand.x - player.pos.x, sh.stand.z - player.pos.z) < 1.9) shelfHere = sh;
+  });
+  const btn = $('shelfBtn');
+  if (btn.hidden === !!shelfHere) btn.hidden = !shelfHere;
+  if (!shelfHere) return;
+  const cost = shelfNext(shelfHere), label = `${PRODUCT[shelfHere.type].name} rafı ${shelfHere.cap} → ${shelfHere.cap + 3}  ₺${cost}`;
+  if (label !== shelfLabel) { shelfLabel = label; btn.textContent = label; }
+  btn.classList.toggle('afford', S.money >= cost);
+}
+$('shelfBtn').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (!shelfHere) return;
+  const cost = shelfNext(shelfHere);
+  if (S.money < cost) { sfx(190, 0.14); return; }
+  S.money -= cost; S.shelves[shelfHere.type] = shelfHere.cap + 3;
+  setShelfCap(shelfHere, shelfHere.cap + 3);
+  shelfLabel = ''; sfx(880, 0.09); sfx(1320, 0.12, 0.08); save();
+});
+
 function updateThief(dt) {
   if (powFx) {
     powFx.t += dt; powFx.sp.scale.setScalar(1 + powFx.t * 4);
@@ -1516,6 +1596,7 @@ function updateThief(dt) {
     }
     if (thief) updateActor(thief, dt);
   }
+  if (guard) guardAI(dt);
   const btn = $('hitBtn'), show = !!thief && !thief.hit;
   if (btn.hidden === show) btn.hidden = !show;
   if (show) btn.classList.toggle('ready', Math.hypot(thief.pos.x - player.pos.x, thief.pos.z - player.pos.z) <= HIT_RANGE);
@@ -1528,7 +1609,7 @@ addEventListener('keydown', e => {
 
 /* ---------- Açılacak yerler ---------- */
 const S = {
-  money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false, rep: 70, owned: {}, hints: {},
+  money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false, rep: 70, owned: {}, hints: {}, shelves: {},
   style: { floor: 'nane', wall: '#f7e7c6', awning: '#e4472f', uniform: '#1f8a70', name: 'KÖŞE BAKKAL' },
 };
 const PADS = [
@@ -1566,6 +1647,7 @@ const PADS = [
   { id: 'meyveDolap', name: 'Meyve suyu dolabı', cost: 900, x: 2, z: -12.4, req: ['sikma'] },
   { id: 'borekFirin', name: 'Börek fırını', cost: 2200, x: 43, z: 3.8, req: ['meyveDolap'] },
   { id: 'borekRaf', name: 'Börek tezgâhı', cost: 1400, x: 6, z: -12.4, req: ['borekFirin'] },
+  { id: 'guvenlik', name: 'Kapı güvenliği', cost: 4000, x: 6.6, z: 11.2, req: ['arkaSalon', 'yumurtaRaf'] },
 ];
 const pops = [];
 function reveal(group, anim) { group.visible = true; if (anim) pops.push({ o: group, t: 0 }); }
@@ -1615,6 +1697,10 @@ function applyUnlock(id, anim) {
     case 'borekFirin': openSource('borek', anim); break;
     case 'borekRaf': openShelf('borek', anim); break;
     case 'cirak4': addHelper(3); break;
+    case 'guvenlik':
+      guard = newActor({ body: 0x2c3e6b, skin: 0xd9a273, cap: 0x2c3e6b }, GUARD_POST, 1);
+      nameTag(guard, 'Güvenlik', '#2c6fbb');
+      updateActor(guard, 0); if (anim) pops.push({ o: guard.rig.g, t: 0 }); break;
     case 'yumurtaRaf': openShelf('yumurta', anim); break;
     case 'mandira': openSource('peynir', anim); break;
     case 'peynirRaf': openShelf('peynir', anim); break;
@@ -1730,6 +1816,9 @@ function hintNow() {
     if (sh.unlocked && !seen['stock:' + type]) return { text: `${PRODUCT[type].name} rafa diz`, at: sh.stand, y: 2.6 };
   }
   if (player.stack.length >= player.cap && !seen.full) return { text: 'Sepetin dolu, ürünü rafına götür', at: shelves[player.stack[0].type].stand, y: 2.6 };
+  if (player.stack.length >= player.cap && !seen.trash && player.stack.every(it => !shelves[it.type].unlocked || shelves[it.type].items.length >= shelves[it.type].cap)) {
+    return { text: 'Raflar dolu, fazlasını çöp kutusuna at', at: BIN, y: 1.6 };
+  }
   const fresh = openShelves().find(s => sources[s.type].unlocked && !seen['harvest:' + s.type]);
   if (fresh) return { text: `${PRODUCT[fresh.type].name} topla`, at: sources[fresh.type].center, y: 2 };
   return null;
@@ -1849,7 +1938,7 @@ function updateHud() {
   const stars = Math.max(1, Math.round(S.rep / 20));
   const rep = '★'.repeat(stars) + '☆'.repeat(5 - stars);
   if (rep !== lastRep) { lastRep = rep; $('rep').textContent = rep; }
-  const staff = 'Çalışan ' + ((cashier ? 1 : 0) + helpers.length + (accountant ? 1 : 0)) + '/6';
+  const staff = 'Çalışan ' + ((cashier ? 1 : 0) + helpers.length + (accountant ? 1 : 0) + (guard ? 1 : 0)) + '/7';
   if (staff !== lastStaff) { lastStaff = staff; $('staff').textContent = staff; }
   const done = PADS.filter(p => S.unlocked[p.id]).length;
   $('progressFill').style.width = (done / PADS.length * 100) + '%';
@@ -1995,7 +2084,7 @@ const SAVE_KEY = 'kose-bakkal-v1';
 let noSave = false;
 function save() {
   if (noSave) return;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, hints: S.hints, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, hints: S.hints, shelves: S.shelves, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
 }
 /* Kayıt dışarıdan değiştirilebilir: yalnızca geçerli değerler ve oyunda var olan seçenekler yüklenir */
 const clampNum = (v, max) => (Number.isFinite(v) ? Math.min(max, Math.max(0, v)) : 0);
@@ -2022,8 +2111,12 @@ function load() {
     else if (paid[p.id] > 0) { p.paid = clampNum(paid[p.id], p.cost - 1); p.fill.scale.y = p.paid / p.cost; p.fill.position.y = -1.36 + 1.36 * p.paid / p.cost; }
   });
   S.done = d.done === true && PADS.every(p => S.unlocked[p.id]);
+  const shelfCaps = asRecord(d.shelves);
+  Object.values(shelves).forEach(sh => {
+    if (sh.unlocked && (shelfCaps[sh.type] === 15 || shelfCaps[sh.type] === 18)) { S.shelves[sh.type] = shelfCaps[sh.type]; setShelfCap(sh, shelfCaps[sh.type]); }
+  });
   if (d.hints && typeof d.hints === 'object' && !Array.isArray(d.hints)) {
-    Object.keys(d.hints).forEach(k => { if (d.hints[k] === true && /^(walk|register|pile|full|(harvest|stock):[a-z]+)$/.test(k)) S.hints[k] = true; });
+    Object.keys(d.hints).forEach(k => { if (d.hints[k] === true && /^(walk|register|pile|full|trash|(harvest|stock):[a-z]+)$/.test(k)) S.hints[k] = true; });
   } else if (S.earned > 0) {
     /* Yönlendirme kaydı olmayan eski oyun: oyuncunun zaten yaptığı işler tekrar gösterilmez */
     ['walk', 'register', 'pile', 'full'].forEach(markHint);
@@ -2086,6 +2179,8 @@ function step(dt, time) {
   updateRegister(dt);
   updatePile();
   updateThief(dt);
+  updateTrash(dt);
+  updateShelfBtn();
   helpers.forEach(h => { helperAI(h, dt); updateActor(h, dt); });
   updateActor(player, dt);
   if (cashier) { cashier.face = 0; updateActor(cashier, dt); }
@@ -2139,6 +2234,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 /* Test kancası yalnızca yerel geliştirmede açılır */
-if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, PADS, helpers, step, dropped, hitThief, get accountant() { return accountant; }, get thief() { return thief; }, callThief() { thiefT = 0; } };
+if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, PADS, helpers, step, dropped, hitThief, get accountant() { return accountant; }, get thief() { return thief; }, get guard() { return guard; }, BIN, callThief() { thiefT = 0; } };
 })();
 </script>
