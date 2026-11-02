@@ -1,5 +1,5 @@
 /* Oyunu ilk açılıştan sonra internetsiz de çalıştırır */
-const CACHE = 'kose-bakkal-v3';
+const CACHE = 'kose-bakkal-v4';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
