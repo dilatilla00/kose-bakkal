@@ -111,6 +111,19 @@ body {
   width: min(280px, calc(100% - 64px)); height: 16px;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 10px; overflow: hidden;
 }
+/* Parmak sağ altta rahat ulaşsın; hırsız uzaktaysa soluk, yakındaysa parlak */
+#hitBtn {
+  position: fixed; pointer-events: auto; touch-action: none; cursor: pointer;
+  right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  width: 92px; height: 92px; padding: 0; border-radius: 50%;
+  font: 800 26px var(--font); color: var(--paper); background: #8f8a94; opacity: .72;
+  border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink);
+}
+#hitBtn.ready { background: var(--tomato); opacity: 1; animation: hitPulse .55s ease-in-out infinite alternate; }
+#hitBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+@keyframes hitPulse { to { transform: scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { #hitBtn.ready { animation: none; } }
+@media (max-height: 460px) { #hitBtn { width: 76px; height: 76px; font-size: 22px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); } }
 #rep {
   position: fixed; left: 50%; transform: translateX(-50%); pointer-events: none;
   bottom: calc(38px + env(safe-area-inset-bottom, 0px));
@@ -207,6 +220,7 @@ body {
     <button id="pauseBtn" type="button" aria-label="Oyunu duraklat">II</button>
   </div>
   <div id="hint" class="sticker">Karpuz topla</div>
+  <button id="hitBtn" type="button" aria-label="Hırsıza vur" hidden>VUR</button>
 </div>
 <div id="menu">
   <div id="pMain" class="panel">
@@ -236,6 +250,7 @@ body {
         <li>Masadaki parayı topla.</li>
         <li>Fiyatlı karelere basıp yeni yer aç, çalışan tut.</li>
         <li>Müşteriyi bekletme: balonu kızarınca sabrı bitiyor. Kızıp giderse yıldızın düşer, yıldızın yüksekse bahşiş alırsın.</li>
+        <li>Hırsız gelince yanına koş ve VUR düğmesine bas. Düşürdüğü ürünleri toplayıp rafına geri koy.</li>
       </ol>
     </div>
     <button class="menuBtn primary" type="button" data-back>Tamam</button>
@@ -1082,7 +1097,7 @@ for (let i = 0; i < 6; i++) {
 let doorOpen = 0, doorWasOpen = false;
 function updateDoors(dt) {
   const near = e => Math.hypot(e.pos.x, e.pos.z - FRONT_Z) < 3;
-  const wanted = near(player) || customers.some(near) || helpers.some(near);
+  const wanted = near(player) || customers.some(near) || helpers.some(near) || (thief && near(thief));
   if (wanted && !doorWasOpen && Math.hypot(player.pos.x, player.pos.z - FRONT_Z) < 22) { sfx(1560, 0.14); sfx(1170, 0.2, 0.11); }
   doorWasOpen = wanted;
   doorOpen += ((wanted ? 1 : 0) - doorOpen) * Math.min(1, dt * 9);
@@ -1185,9 +1200,9 @@ function tryDeposit(e) {
 }
 /* Personelin ortak üniforması: yeşil gömlek, beyaz önlük; adları başlarının üstünde */
 const STAFF = { bodyMat: M.uniform, apron: true };
-function nameTag(actor, text) {
+function nameTag(actor, text, color) {
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ depthTest: false, transparent: true, map: canvasTex(220, 60, (g, w, h) => {
-    g.clearRect(0, 0, w, h); g.fillStyle = '#1f8a70'; roundRect(g, 2, 2, w - 4, h - 4, 20); g.fill();
+    g.clearRect(0, 0, w, h); g.fillStyle = color || '#1f8a70'; roundRect(g, 2, 2, w - 4, h - 4, 20); g.fill();
     g.fillStyle = '#fffaf0'; g.font = `800 36px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2, h / 2 + 3);
   }) }));
   sp.scale.set(1.6 * spriteScale(), 0.44 * spriteScale(), 1); sp.position.y = 2.15; sp.renderOrder = 9; actor.rig.g.add(sp);
@@ -1396,6 +1411,121 @@ function updatePile() {
   save();
 }
 
+/* ---------- Hırsız ---------- */
+const HIT_RANGE = 2.5;
+const THIEF_EXIT = [V(-0.3, 0, 7.4), V(-0.3, 0, 10.6), V(36, 0, 12)];
+const dropped = [];
+let thief = null, thiefT = 40, powFx = null;
+const stripeMat = new THREE.MeshLambertMaterial({ map: canvasTex(64, 64, (g, w, h) => {
+  g.fillStyle = '#fffaf0'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#2c2a3f'; for (let i = 0; i < 4; i++) g.fillRect(0, i * 16, w, 8);
+}) });
+const powTex = canvasTex(128, 128, (g, w) => {
+  g.fillStyle = '#f5b92e'; g.strokeStyle = INK; g.lineWidth = 6; g.beginPath();
+  for (let i = 0; i < 20; i++) {
+    const a = i / 20 * Math.PI * 2, r = i % 2 ? 36 : 60;
+    g[i ? 'lineTo' : 'moveTo'](w / 2 + Math.cos(a) * r, w / 2 + Math.sin(a) * r);
+  }
+  g.closePath(); g.fill(); g.stroke();
+  g.fillStyle = '#c23520'; g.font = `800 36px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('PAT!', w / 2, w / 2 + 3);
+});
+function spawnThief() {
+  const rig = { bodyMat: stripeMat, skin: 0xd9a273, cap: 0x2c2a3f };
+  thief = newActor(rig, V(34, 0, 12), 99);
+  box(0.6, 0.13, 0.08, M.ink, 0, 1.4, 0.3, thief.rig.g).castShadow = false;
+  [-0.13, 0.13].forEach(x => mesh(new THREE.SphereGeometry(0.05, 8, 6), M.white, x, 1.4, 0.35, thief.rig.g).castShadow = false);
+  nameTag(thief, 'HIRSIZ', '#c23520');
+  thief.state = 'in'; thief.path = [V(-0.3, 0, 10.6), V(-0.3, 0, 7.4)];
+  thief.want = 1 + Math.floor(Math.random() * 3); thief.stealT = 0.7; thief.hit = false; thief.target = null;
+  toast('Hırsız geldi! Yakala ve vur', 2200);
+  sfx(740, 0.16); sfx(520, 0.16, 0.18); sfx(740, 0.16, 0.36); sfx(520, 0.18, 0.54);
+}
+function removeThief() {
+  thief.stack.forEach(it => killItem(it, 0));
+  scene.remove(thief.rig.g);
+  thief = null;
+  thiefT = rnd(75, 130) * (1 - 0.3 * stage());
+}
+function hitThief() {
+  if (!thief || thief.hit || gameState !== 'play') return;
+  if (Math.hypot(thief.pos.x - player.pos.x, thief.pos.z - player.pos.z) > HIT_RANGE) { sfx(240, 0.06); return; }
+  thief.hit = true;
+  player.face = Math.atan2(thief.pos.x - player.pos.x, thief.pos.z - player.pos.z);
+  player.rig.armR.position.z = 1; player.rig.armL.position.z = 1;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: powTex, depthTest: false, transparent: true }));
+  sp.position.set(thief.pos.x, 1.6, thief.pos.z); sp.renderOrder = 11; scene.add(sp);
+  powFx = { sp, t: 0 };
+  sfx(150, 0.16); sfx(95, 0.2, 0.05);
+  const had = thief.stack.length;
+  thief.stack.forEach((it, i) => {
+    const a = i * 2.1 + 0.6;
+    it.t.set(thief.pos.x + Math.cos(a) * 1.1, HEIGHT[it.type] / 2 + 0.06, thief.pos.z + Math.sin(a) * 1.1);
+    it.k = 8; it.arc = 0.5; dropped.push(it);
+  });
+  thief.stack.length = 0;
+  toast(had ? 'Hırsız ürünleri düşürdü! Topla ve rafına koy' : 'Hırsız korkup kaçtı', 2000);
+  changeRep(3);
+  thief.state = 'stun'; thief.stunT = 0.45;
+}
+function updateThief(dt) {
+  if (powFx) {
+    powFx.t += dt; powFx.sp.scale.setScalar(1 + powFx.t * 4);
+    if (powFx.t > 0.32) { scene.remove(powFx.sp); powFx = null; }
+  }
+  for (let i = dropped.length - 1; i >= 0 && player.stack.length < player.cap; i--) {
+    const it = dropped[i];
+    if (it.p.distanceTo(it.t) > 0.2 || Math.hypot(it.t.x - player.pos.x, it.t.z - player.pos.z) > 1.7) continue;
+    dropped.splice(i, 1); it.recovered = true; player.stack.push(it); sfx(620, 0.05);
+    break;
+  }
+  if (!thief) {
+    if (S.earned >= 150 && (thiefT -= dt) <= 0) spawnThief();
+  } else {
+    const t = thief;
+    if (t.state === 'in') {
+      if (moveTo(t, t.path[0], 5.2, dt)) {
+        t.path.shift();
+        if (!t.path.length) {
+          t.target = openShelves().sort((a, b) => b.items.length - a.items.length)[0];
+          t.state = t.target.items.length ? 'go' : 'run';
+          t.path = THIEF_EXIT.slice();
+        }
+      }
+    } else if (t.state === 'go') {
+      if (routed(t, t.target.stand, 5, dt)) t.state = 'steal';
+    } else if (t.state === 'steal') {
+      t.face = angleTo(t.face, Math.PI, Math.min(1, dt * 8));
+      if ((t.stealT -= dt) <= 0) {
+        t.stealT = 0.6;
+        const it = t.target.items.pop();
+        if (it) t.stack.push(it);
+        if (!it || t.stack.length >= t.want) { t.state = 'run'; toast('Hırsız ürünleri alıp kaçıyor!', 1600); }
+      }
+    } else if (t.state === 'stun') {
+      t.face += dt * 16;
+      if ((t.stunT -= dt) <= 0) { t.state = 'flee'; t.path = THIEF_EXIT.slice(); }
+    } else {
+      const run = t.state === 'flee' ? 9 : 6;
+      if (routed(t, t.path[0], run, dt)) {
+        t.path.shift();
+        if (!t.path.length) {
+          if (t.stack.length) { toast('Hırsız ürünlerle kaçtı!', 1800); changeRep(-6); sfx(190, 0.26); }
+          removeThief();
+        }
+      }
+    }
+    if (thief) updateActor(thief, dt);
+  }
+  const btn = $('hitBtn'), show = !!thief && !thief.hit;
+  if (btn.hidden === show) btn.hidden = !show;
+  if (show) btn.classList.toggle('ready', Math.hypot(thief.pos.x - player.pos.x, thief.pos.z - player.pos.z) <= HIT_RANGE);
+}
+$('hitBtn').addEventListener('pointerdown', e => { e.preventDefault(); hitThief(); });
+addEventListener('keydown', e => {
+  if (e.target instanceof HTMLInputElement || e.repeat || (e.code !== 'Space' && e.code !== 'KeyF')) return;
+  e.preventDefault(); hitThief();
+});
+
 /* ---------- Açılacak yerler ---------- */
 const S = {
   money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false, rep: 70, owned: {}, hints: {},
@@ -1585,6 +1715,11 @@ const chevron = new THREE.Mesh(chevGeo, new THREE.MeshBasicMaterial({ color: 0xe
 function markHint(key) { S.hints[key] = true; }
 function hintNow() {
   const seen = S.hints;
+  /* Hırsız olayları her seferinde gösterilir */
+  if (thief && !thief.hit) return { text: thief.stack.length ? 'Hırsız kaçıyor! Yetiş ve vur' : 'Hırsıza yetiş ve vur', at: thief.pos, y: 2.7 };
+  if (dropped.length) return { text: 'Düşen ürünleri topla', at: dropped[dropped.length - 1].t, y: 1.2 };
+  const saved = player.stack.find(it => it.recovered);
+  if (saved) return { text: `${PRODUCT[saved.type].name} rafına geri koy`, at: shelves[saved.type].stand, y: 2.6 };
   if (isTouch && !seen.walk) return { text: 'Parmağını ekranda sürükleyerek yürü', at: sources.karpuz.center, y: 2 };
   if (!cashier && !seen.register && queue.length && !nearReg()) return { text: 'Müşteri kasada bekliyor', at: REG, y: 1.4 };
   if (!accountant && !seen.pile && pile.amount > 0) return { text: 'Kasanın yanındaki parayı topla', at: PILE, y: 1.8 };
@@ -1950,6 +2085,7 @@ function step(dt, time) {
   for (let i = customers.length - 1; i >= 0; i--) { const c = customers[i]; updateCustomer(c, dt); if (customers.includes(c)) updateActor(c, dt); }
   updateRegister(dt);
   updatePile();
+  updateThief(dt);
   helpers.forEach(h => { helperAI(h, dt); updateActor(h, dt); });
   updateActor(player, dt);
   if (cashier) { cashier.face = 0; updateActor(cashier, dt); }
@@ -2003,6 +2139,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 /* Test kancası yalnızca yerel geliştirmede açılır */
-if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, PADS, helpers, step, get accountant() { return accountant; } };
+if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, PADS, helpers, step, dropped, hitThief, get accountant() { return accountant; }, get thief() { return thief; }, callThief() { thiefT = 0; } };
 })();
 </script>
