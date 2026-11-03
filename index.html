@@ -518,20 +518,21 @@ const tomMat = mat(0xe4472f), breadMat = mat(0xdb9c52), bottleMat = mat(0xffffff
 
 const BUILD = {
   sut() {
-    const g = new THREE.Group(); mesh(G.bottle, mat(0xf8fbff), 0, 0, 0, g);
-    mesh(G.cap, mat(0x2c6fbb), 0, 0.24, 0, g); box(0.31, 0.14, 0.31, mat(0x2c6fbb), 0, -0.02, 0, g); return g;
+    /* Mavi süt kutusu, beyaz çatılı */
+    const g = new THREE.Group(); box(0.3, 0.38, 0.3, mat(0x2c6fbb), 0, -0.04, 0, g);
+    const roof = box(0.22, 0.22, 0.31, M.white, 0, 0.17, 0, g); roof.rotation.z = Math.PI / 4; return g;
   },
   gazoz() {
     const g = new THREE.Group(); mesh(G.bottle, mat(0xf5912e), 0, 0, 0, g);
     mesh(G.cap, M.steel, 0, 0.24, 0, g); return g;
   },
   meyve() {
-    const g = new THREE.Group(); box(0.3, 0.42, 0.22, mat(0xf5b92e), 0, 0, 0, g);
-    box(0.31, 0.15, 0.23, mat(0xe4472f), 0, 0.03, 0, g); box(0.04, 0.12, 0.04, M.white, 0.08, 0.26, 0, g); return g;
+    const g = new THREE.Group(); box(0.3, 0.42, 0.22, mat(0x7b3fa0), 0, 0, 0, g);
+    box(0.31, 0.15, 0.23, mat(0xf5912e), 0, 0.03, 0, g); box(0.04, 0.12, 0.04, M.white, 0.08, 0.26, 0, g); return g;
   },
   borek() {
-    const g = new THREE.Group(); box(0.54, 0.2, 0.4, mat(0xd99a48), 0, 0, 0, g);
-    box(0.46, 0.04, 0.32, mat(0xefc27a), 0, 0.11, 0, g); return g;
+    const g = new THREE.Group(); box(0.56, 0.08, 0.42, mat(0xc23520), 0, -0.06, 0, g);
+    box(0.48, 0.16, 0.34, mat(0xf2c46d), 0, 0.04, 0, g); return g;
   },
   karpuz() { const m = mesh(G.melon, melonMat); m.scale.set(1, 0.86, 0.86); return m; },
   domates() {
@@ -548,7 +549,7 @@ const BUILD = {
     box(0.48, 0.05, 0.32, mat(0xa97c48), 0, 0.2, 0, g); return g;
   },
   elma() {
-    const g = new THREE.Group(); const a = mesh(G.elma, mat(0xc9302c), 0, 0, 0, g); a.scale.y = 0.92;
+    const g = new THREE.Group(); const a = mesh(G.elma, mat(0x9acd32), 0, 0, 0, g); a.scale.y = 0.92;
     mesh(G.twig, M.woodDark, 0, 0.2, 0, g); return g;
   },
   simit() {
@@ -558,7 +559,7 @@ const BUILD = {
   yumurta() { const e = mesh(G.egg, mat(0xf6e3c5)); e.scale.y = 1.3; return e; },
   peynir() {
     const g = new THREE.Group(); box(0.5, 0.28, 0.36, mat(0xfff3c4), 0, 0, 0, g);
-    box(0.51, 0.08, 0.37, mat(0x36a6c9), 0, 0, 0, g); return g;
+    box(0.51, 0.08, 0.37, mat(0x3f9b5a), 0, 0, 0, g); return g;
   },
   cips() {
     const g = new THREE.Group(); box(0.38, 0.46, 0.18, mat(0xf5b92e), 0, 0, 0, g);
@@ -566,14 +567,14 @@ const BUILD = {
   },
   cikolata() {
     const g = new THREE.Group(); box(0.52, 0.12, 0.28, mat(0x5a3321), 0, 0, 0, g);
-    box(0.2, 0.13, 0.29, mat(0xe9dfc2), 0, 0, 0, g); return g;
+    box(0.2, 0.13, 0.29, mat(0xf5b92e), 0, 0, 0, g); return g;
   },
   sabun() {
     const g = new THREE.Group(); box(0.38, 0.18, 0.26, mat(0xe87fb0), 0, 0, 0, g);
     box(0.28, 0.03, 0.17, mat(0xf7bcd6), 0, 0.1, 0, g); return g;
   },
   deterjan() {
-    const g = new THREE.Group(); box(0.32, 0.42, 0.2, mat(0x2c6fbb), 0, 0, 0, g);
+    const g = new THREE.Group(); box(0.32, 0.42, 0.2, mat(0x159e9a), 0, 0, 0, g);
     box(0.33, 0.14, 0.21, M.white, 0, 0, 0, g); mesh(G.cap, mat(0xe4472f), 0, 0.24, 0, g); return g;
   },
 };
@@ -594,17 +595,18 @@ function drawIcon(g, type, x, y, r) {
   if (type === 'domates') { g.fillStyle = '#e4472f'; g.beginPath(); g.ellipse(x, y + r * 0.1, r * 0.9, r * 0.78, 0, 0, 7); g.fill(); g.fillStyle = '#3f9b5a'; g.beginPath(); g.ellipse(x, y - r * 0.62, r * 0.4, r * 0.17, 0, 0, 7); g.fill(); }
   if (type === 'ekmek') { g.fillStyle = '#db9c52'; g.beginPath(); g.ellipse(x, y, r, r * 0.48, -0.3, 0, 7); g.fill(); g.strokeStyle = '#f5d9a0'; g.lineWidth = r * 0.12; [-0.4, 0, 0.4].forEach(k => { g.beginPath(); g.moveTo(x + k * r - 3, y + r * 0.1); g.lineTo(x + k * r + 7, y - r * 0.25); g.stroke(); }); }
   if (type === 'ayran') { g.fillStyle = '#ffffff'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.45, y - r * 0.7, r * 0.9, r * 1.6, 6); g.fill(); g.stroke(); g.fillStyle = '#36a6c9'; g.fillRect(x - r * 0.5, y - r * 0.92, r, r * 0.3); }
-  if (type === 'elma') { g.fillStyle = '#c9302c'; g.beginPath(); g.ellipse(x, y + r * 0.1, r * 0.85, r * 0.8, 0, 0, 7); g.fill(); g.fillStyle = '#3f9b5a'; g.beginPath(); g.ellipse(x + r * 0.28, y - r * 0.78, r * 0.34, r * 0.15, -0.4, 0, 7); g.fill(); }
+  if (type === 'elma') { g.fillStyle = '#9acd32'; g.beginPath(); g.ellipse(x, y + r * 0.1, r * 0.85, r * 0.8, 0, 0, 7); g.fill(); g.fillStyle = '#3f9b5a'; g.beginPath(); g.ellipse(x + r * 0.28, y - r * 0.78, r * 0.34, r * 0.15, -0.4, 0, 7); g.fill(); }
   if (type === 'simit') { g.strokeStyle = '#c98a3f'; g.lineWidth = r * 0.5; g.beginPath(); g.arc(x, y, r * 0.66, 0, 7); g.stroke(); }
   if (type === 'yumurta') { g.fillStyle = '#f6e3c5'; g.strokeStyle = INK; g.lineWidth = 3; g.beginPath(); g.ellipse(x, y, r * 0.66, r * 0.88, 0, 0, 7); g.fill(); g.stroke(); }
-  if (type === 'peynir') { g.fillStyle = '#fff3c4'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r, y - r * 0.6, r * 2, r * 1.2, 6); g.fill(); g.stroke(); g.fillStyle = '#36a6c9'; g.fillRect(x - r + 2, y - r * 0.16, r * 2 - 4, r * 0.32); }
-  if (type === 'sut' || type === 'gazoz') { g.fillStyle = type === 'sut' ? '#f8fbff' : '#f5912e'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.42, y - r * 0.7, r * 0.84, r * 1.6, 7); g.fill(); g.stroke(); g.fillStyle = type === 'sut' ? '#2c6fbb' : '#c9d3d8'; g.fillRect(x - r * 0.3, y - r * 0.98, r * 0.6, r * 0.3); if (type === 'sut') g.fillRect(x - r * 0.42, y, r * 0.84, r * 0.34); }
-  if (type === 'meyve') { g.fillStyle = '#f5b92e'; g.strokeStyle = INK; g.lineWidth = 3; g.fillRect(x - r * 0.6, y - r * 0.8, r * 1.2, r * 1.7); g.strokeRect(x - r * 0.6, y - r * 0.8, r * 1.2, r * 1.7); g.fillStyle = '#e4472f'; g.beginPath(); g.arc(x, y + r * 0.1, r * 0.34, 0, 7); g.fill(); }
-  if (type === 'borek') { g.fillStyle = '#d99a48'; roundRect(g, x - r, y - r * 0.5, r * 2, r, 7); g.fill(); g.strokeStyle = '#efc27a'; g.lineWidth = r * 0.14; [-0.5, 0, 0.5].forEach(k => { g.beginPath(); g.moveTo(x + k * r, y - r * 0.32); g.lineTo(x + k * r, y + r * 0.32); g.stroke(); }); }
+  if (type === 'peynir') { g.fillStyle = '#fff3c4'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r, y - r * 0.6, r * 2, r * 1.2, 6); g.fill(); g.stroke(); g.fillStyle = '#3f9b5a'; g.fillRect(x - r + 2, y - r * 0.16, r * 2 - 4, r * 0.32); }
+  if (type === 'sut') { g.fillStyle = '#2c6fbb'; g.strokeStyle = INK; g.lineWidth = 3; g.fillRect(x - r * 0.55, y - r * 0.35, r * 1.1, r * 1.2); g.strokeRect(x - r * 0.55, y - r * 0.35, r * 1.1, r * 1.2); g.fillStyle = '#fffaf0'; g.beginPath(); g.moveTo(x - r * 0.55, y - r * 0.35); g.lineTo(x, y - r * 0.95); g.lineTo(x + r * 0.55, y - r * 0.35); g.closePath(); g.fill(); g.stroke(); }
+  if (type === 'gazoz') { g.fillStyle = type === 'sut' ? '#f8fbff' : '#f5912e'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.42, y - r * 0.7, r * 0.84, r * 1.6, 7); g.fill(); g.stroke(); g.fillStyle = type === 'sut' ? '#2c6fbb' : '#c9d3d8'; g.fillRect(x - r * 0.3, y - r * 0.98, r * 0.6, r * 0.3); if (type === 'sut') g.fillRect(x - r * 0.42, y, r * 0.84, r * 0.34); }
+  if (type === 'meyve') { g.fillStyle = '#7b3fa0'; g.strokeStyle = INK; g.lineWidth = 3; g.fillRect(x - r * 0.6, y - r * 0.8, r * 1.2, r * 1.7); g.strokeRect(x - r * 0.6, y - r * 0.8, r * 1.2, r * 1.7); g.fillStyle = '#f5912e'; g.beginPath(); g.arc(x, y + r * 0.1, r * 0.34, 0, 7); g.fill(); }
+  if (type === 'borek') { g.fillStyle = '#c23520'; roundRect(g, x - r, y + r * 0.1, r * 2, r * 0.45, 5); g.fill(); g.fillStyle = '#f2c46d'; roundRect(g, x - r * 0.88, y - r * 0.5, r * 1.76, r * 0.75, 7); g.fill(); g.strokeStyle = '#c98a3f'; g.lineWidth = r * 0.14; [-0.5, 0, 0.5].forEach(k => { g.beginPath(); g.moveTo(x + k * r, y - r * 0.32); g.lineTo(x + k * r, y + r * 0.32); g.stroke(); }); }
   if (type === 'cips') { g.fillStyle = '#f5b92e'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.62, y - r * 0.85, r * 1.24, r * 1.7, 6); g.fill(); g.stroke(); g.fillStyle = '#e4472f'; g.fillRect(x - r * 0.6, y - r * 0.2, r * 1.2, r * 0.4); }
-  if (type === 'cikolata') { g.fillStyle = '#5a3321'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r, y - r * 0.55, r * 2, r * 1.1, 5); g.fill(); g.stroke(); g.fillStyle = '#e9dfc2'; g.fillRect(x - r * 0.3, y - r * 0.53, r * 0.6, r * 1.06); }
+  if (type === 'cikolata') { g.fillStyle = '#5a3321'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r, y - r * 0.55, r * 2, r * 1.1, 5); g.fill(); g.stroke(); g.fillStyle = '#f5b92e'; g.fillRect(x - r * 0.3, y - r * 0.53, r * 0.6, r * 1.06); }
   if (type === 'sabun') { g.fillStyle = '#e87fb0'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.85, y - r * 0.55, r * 1.7, r * 1.1, r * 0.4); g.fill(); g.stroke(); g.fillStyle = '#fffaf0'; [[-0.2, -0.75], [0.3, -0.9], [0.65, -0.65]].forEach(b => { g.beginPath(); g.arc(x + b[0] * r, y + b[1] * r, r * 0.17, 0, 7); g.fill(); }); }
-  if (type === 'deterjan') { g.fillStyle = '#2c6fbb'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.55, y - r * 0.65, r * 1.1, r * 1.55, 6); g.fill(); g.stroke(); g.fillStyle = '#fffaf0'; g.fillRect(x - r * 0.53, y - r * 0.1, r * 1.06, r * 0.4); g.fillStyle = '#e4472f'; g.fillRect(x - r * 0.25, y - r * 0.95, r * 0.5, r * 0.3); }
+  if (type === 'deterjan') { g.fillStyle = '#159e9a'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.55, y - r * 0.65, r * 1.1, r * 1.55, 6); g.fill(); g.stroke(); g.fillStyle = '#fffaf0'; g.fillRect(x - r * 0.53, y - r * 0.1, r * 1.06, r * 0.4); g.fillStyle = '#e4472f'; g.fillRect(x - r * 0.25, y - r * 0.95, r * 0.5, r * 0.3); }
   if (type === 'kizgin') { g.fillStyle = '#e4472f'; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.strokeStyle = '#fffaf0'; g.lineWidth = r * 0.18; g.lineCap = 'round'; g.beginPath(); g.moveTo(x - r * 0.6, y - r * 0.5); g.lineTo(x - r * 0.15, y - r * 0.2); g.moveTo(x + r * 0.6, y - r * 0.5); g.lineTo(x + r * 0.15, y - r * 0.2); g.moveTo(x - r * 0.45, y + r * 0.55); g.quadraticCurveTo(x, y + r * 0.1, x + r * 0.45, y + r * 0.55); g.stroke(); }
   if (type === 'kasa') { g.fillStyle = '#7fd089'; g.strokeStyle = '#2f8a3e'; g.lineWidth = 5; roundRect(g, x - r, y - r * 0.6, r * 2, r * 1.2, 7); g.fill(); g.stroke(); g.fillStyle = '#1f6a31'; g.font = `800 ${r * 1.1}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('₺', x, y + 2); }
   if (type === 'kalp') { g.fillStyle = '#e4472f'; g.font = `800 ${r * 2}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('♥', x, y + 3); }
@@ -684,7 +686,7 @@ function moveTo(e, target, speed, dt) {
   return false;
 }
 /* İkinci sıra reyonun içinden geçmemek için koridorları kullanır */
-const AISLES = [-2.6, 5.4], ROW_Z0 = -0.1, ROW_Z1 = 2.1, DOOR_X = 0.3, BACK_AISLES = [-9.3, 6.4], SALON_LANES = [-8.8, 8.8];
+const AISLES = [-2.6, 5.4], ROW_Z0 = -0.1, ROW_Z1 = 2.1, DOOR_X = 0.3, BACK_AISLES = [-9.25, 8.35], SALON_LANES = [-8.8, 8.8], FIELD_LANE = 2.35;
 function routed(e, target, speed, dt) {
   /* Toptancıya dükkân kapısından çıkılır, depoların arasından geçilir */
   const toDepot = target.z > 18, lane = Math.abs(e.pos.x - DOOR_X) < 0.3;
@@ -697,6 +699,9 @@ function routed(e, target, speed, dt) {
   if (toDepot && Math.abs(e.pos.x - target.x) > 0.5) { moveTo(e, V(target.x, 0, 19.4), speed, dt); return false; }
   if (!toDepot && inDepot) { moveTo(e, V(DOOR_X, 0, lane ? 18 : 19.4), speed, dt); return false; }
   if (!toDepot && lane && e.pos.z > 7.7 && target.z < 7.4) { moveTo(e, V(DOOR_X, 0, 7.5), speed, dt); return false; }
+  /* Salondan gelen ön reyonun arkasından çıkıp önüne geçer */
+  if (e.pos.z > -5.2 && e.pos.z < -2.9 && target.z > -2.9) { moveTo(e, V(e.pos.x, 0, -2.7), speed, dt); return false; }
+  if (e.pos.z > -5.2 && fieldLane(e, target, speed, dt)) return false;
   /* Arka salona ön reyonun iki yanından geçilir */
   const inBack = e.pos.z < -5.2, toBack = target.z < -5.2;
   if (inBack !== toBack) {
@@ -706,10 +711,28 @@ function routed(e, target, speed, dt) {
     else routed(e, V(gx, 0, inBack ? -6.7 : -2.7), speed, dt);
     return false;
   }
-  /* Salondan gelen ön reyonun arkasından çıkıp önüne geçer */
-  if (!inBack && e.pos.z < -2.9 && target.z > -2.9) { moveTo(e, V(e.pos.x, 0, -2.7), speed, dt); return false; }
   if (inBack && crossBack(e, target, speed, dt)) return false;
   return routeFloor(e, target, speed, dt);
+}
+/* Çitli tarlalar: karpuz ve domatese açık doğu kenarından, elma ve simide aradaki yoldan gidilir */
+function fieldLane(e, target, speed, dt) {
+  const zoneOf = p => (p.x < -21.3 ? 'w' : p.x > -11.4 ? 'e' : p.z < 0.8 ? 'k' : p.z > 2.8 ? 'd' : 'c');
+  const from = zoneOf(e.pos), to = zoneOf(target);
+  if (from === to) return false;
+  const A = V(-11, 0, FIELD_LANE), B = V(-21.6, 0, FIELD_LANE);
+  /* Yola bir kez girildi mi yolun öbür ucuna kadar yürünür */
+  const onLane = Math.abs(e.pos.z - FIELD_LANE) < 0.15 && e.pos.x < -10.8 && e.pos.x > -21.8;
+  const gate = (zone, z) => V(-11.3, 0, zone === 'k' ? Math.min(0.2, Math.max(-4.4, z)) : Math.min(8.2, Math.max(3.4, z)));
+  let p = null;
+  if (to === 'w') p = from === 'e' && !onLane ? A : B;
+  else if (from === 'w') p = onLane ? A : B;
+  else if (from === 'c') p = A;
+  else if (to === 'k' || to === 'd') { if (e.pos.x > -11.1) p = gate(to, target.z); }
+  else if ((from === 'k' || from === 'd') && e.pos.x < -11.5) p = gate(from, e.pos.z);
+  if (!p) return false;
+  /* Dükkân tarafından tarlaya giderken reyon ve tezgâhlar yine dolaşılır */
+  if (from === 'e') routeFloor(e, p, speed, dt); else moveTo(e, p, speed, dt);
+  return true;
 }
 /* Gidiş ile varışa toplamda en yakın geçit seçilir */
 function nearLane(lanes, e, target) {
@@ -831,6 +854,18 @@ function nearestRipe(src, pos) {
   src.slots.forEach(sl => { if (isRipe(src, sl)) { const d = Math.hypot(sl.pos.x - pos.x, sl.pos.z - pos.z); if (d < bd) { bd = d; best = sl; } } });
   return best ? { slot: best, d: bd } : null;
 }
+/* Tarla çiti: dükkâna bakan kenar açık kalır */
+function fence(g, cx, cz, side) {
+  const hx = 4.2, hz = 3, vertical = side === 'w' || side === 'e';
+  const fx = side === 'w' ? -hx : side === 'e' ? hx : 0, fz = side === 'n' ? -hz : side === 's' ? hz : 0;
+  const len = vertical ? hz * 2 : hx * 2;
+  for (let i = 0; i <= len / 1.2; i++) {
+    const k = -len / 2 + i * len / Math.round(len / 1.2);
+    box(0.16, 0.9, 0.16, M.woodDark, vertical ? fx : k, 0.45, vertical ? k : fz, g);
+  }
+  [0.35, 0.7].forEach(y => box(vertical ? 0.08 : len, 0.1, vertical ? len : 0.08, M.wood, fx, y, fz, g));
+  return vertical ? { x0: cx + fx - 0.15, x1: cx + fx + 0.15, z0: cz - hz, z1: cz + hz } : { x0: cx - hx, x1: cx + hx, z0: cz + fz - 0.15, z1: cz + fz + 0.15 };
+}
 function fieldPlot(type, cx, cz, plantColor) {
   const g = new THREE.Group(); g.visible = false; g.position.set(cx, 0, cz); scene.add(g);
   const d = box(8, 0.2, 5.6, M.dirt, 0, 0.05, 0, g); d.castShadow = false;
@@ -848,11 +883,13 @@ function fieldPlot(type, cx, cz, plantColor) {
       slots.push(V(cx + x + 0.36, 1.25, cz + z + 0.56));
     } else slots.push(V(cx + x, type === 'domates' ? 0.62 : 0.5, cz + z));
   }
-  return addSource(type, g, slots, { karpuz: 8, domates: 7, elma: 9 }[type], 1.5, V(cx, 0, cz));
+  const s = addSource(type, g, slots, { karpuz: 8, domates: 7, elma: 9 }[type], 1.5, V(cx, 0, cz));
+  s.fence = { karpuz: ['n', 'w', 's'], domates: ['n', 'w', 's'], elma: ['n', 'w', 'e'] }[type].map(side => fence(g, cx, cz, side));
+  return s;
 }
 fieldPlot('karpuz', -15.6, -2.2, 0x4aa356);
-fieldPlot('domates', -15.6, 5.4, 0x5fb25a);
-fieldPlot('elma', -25.2, -2.2, 0x62b35a);
+fieldPlot('domates', -15.6, 5.8, 0x5fb25a);
+fieldPlot('elma', -25.2, -2.2, 0x2f7f3c);
 
 function oven() {
   const g = new THREE.Group(); g.visible = false; g.position.set(15, 0, -3.4); scene.add(g);
@@ -980,12 +1017,12 @@ function makeShelf(type, x, sz, cold) {
   const g = new THREE.Group(); g.visible = false; g.position.set(x, 0, sz); scene.add(g);
   const m1 = cold ? mat(0xdce7ee) : M.woodDark, m2 = cold ? mat(0xb9d7e8) : M.wood;
   /* Basamaklı reyon: üstten bakınca iki sıra da görünür */
-  box(3.2, 1.9, 0.12, m1, 0, 0.95, -0.68, g);
-  box(3.2, 0.5, 0.7, m2, 0, 0.25, 0.35, g);
-  box(3.2, 1, 0.7, m1, 0, 0.5, -0.32, g);
+  box(2.8, 1.9, 0.12, m1, 0, 0.95, -0.68, g);
+  box(2.8, 0.5, 0.7, m2, 0, 0.25, 0.35, g);
+  box(2.8, 1, 0.7, m1, 0, 0.5, -0.32, g);
   const slots = [];
   [0, 1, 2].forEach(layer => [[0.35, 0.5], [-0.32, 1]].forEach(row => [-1, 0, 1].forEach(c => {
-    slots.push(V(x + c * 0.92, row[1] + HEIGHT[type] * (0.56 + layer), sz + row[0]));
+    slots.push(V(x + c * 0.8, row[1] + HEIGHT[type] * (0.56 + layer), sz + row[0]));
   })));
   /* Fiyat etiketi */
   const tag = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.4), new THREE.MeshBasicMaterial({ map: canvasTex(192, 52, (c, w, h) => {
@@ -995,17 +1032,17 @@ function makeShelf(type, x, sz, cold) {
   tag.position.set(0, 0.26, 0.72); g.add(tag);
   /* Yükseltilen raf önünde altın şerit taşır */
   const strips = [0.08, 0.46].map(y => {
-    const s = box(3.2, 0.07, 0.03, M.mustard, 0, y, 0.72, g); s.visible = false; s.castShadow = false; return s;
+    const s = box(2.8, 0.07, 0.03, M.mustard, 0, y, 0.72, g); s.visible = false; s.castShadow = false; return s;
   });
-  return shelves[type] = { type, group: g, x, slots, strips, items: [], cap: 12, stand: V(x, 0, sz + 1.5), unlocked: false, solid: { x0: x - 1.65, x1: x + 1.65, z0: sz - 0.8, z1: sz + 0.75 } };
+  return shelves[type] = { type, group: g, x, slots, strips, items: [], cap: 12, stand: V(x, 0, sz + 1.5), unlocked: false, solid: { x0: x - 1.45, x1: x + 1.45, z0: sz - 0.8, z1: sz + 0.75 } };
 }
-makeShelf('karpuz', -6, -3.8); makeShelf('domates', -2, -3.8); makeShelf('ekmek', 2, -3.8); makeShelf('ayran', 6, -3.8);
+makeShelf('karpuz', -6.5, -3.8); makeShelf('domates', -2.15, -3.8); makeShelf('ekmek', 2.15, -3.8); makeShelf('ayran', 6.5, -3.8);
 /* İkinci sıra reyon; arasında ve sağında geçiş koridoru var */
-makeShelf('elma', -8.4, 1); makeShelf('simit', -5, 1); makeShelf('yumurta', -0.2, 1); makeShelf('peynir', 3, 1);
+makeShelf('elma', -8.5, 1); makeShelf('simit', -4.55, 1); makeShelf('yumurta', -0.6, 1); makeShelf('peynir', 3.35, 1);
 /* Arka salon */
-makeShelf('sut', -6, -14, true); makeShelf('gazoz', -2, -14, true); makeShelf('meyve', 2, -14, true); makeShelf('borek', 6, -14);
+makeShelf('sut', -6.5, -14, true); makeShelf('gazoz', -2.15, -14, true); makeShelf('meyve', 2.15, -14, true); makeShelf('borek', 6.5, -14);
 /* Arka salonun paketli ürün sırası; sağındaki koridordan geçilir */
-makeShelf('cips', -7, -9); makeShelf('cikolata', -3.4, -9); makeShelf('sabun', 0.2, -9); makeShelf('deterjan', 3.8, -9);
+makeShelf('cips', -7.2, -9); makeShelf('cikolata', -3, -9); makeShelf('sabun', 1.2, -9); makeShelf('deterjan', 5.4, -9);
 
 /* Kasa: aynı model ikinci kasa için de kurulur */
 const REG = V(4.9, 0, 2.7);
@@ -1470,7 +1507,7 @@ function setBubble(c, type, n) {
 }
 function chooseSpot(c) {
   const s = c.wants[0].shelf.stand;
-  c.spot.set(s.x + rnd(-1.15, 1.15), 0, s.z + rnd(-0.05, 0.55));
+  c.spot.set(s.x + rnd(-1, 1), 0, s.z + rnd(-0.05, 0.55));
 }
 function updateCustomer(c, dt) {
   /* Sabır: sırası gelip banda ürün koyana kadar azalır, azaldıkça balon kızarır */
@@ -1743,59 +1780,60 @@ const S = {
   style: { floor: 'nane', wall: '#f7e7c6', awning: '#e4472f', uniform: '#1f8a70', name: 'KÖŞE BAKKAL' },
 };
 const PADS = [
-  { id: 'domTarla', name: 'Domates bahçesi', cost: 40, x: -15.6, z: 5.4, minEarned: 1 },
-  { id: 'domRaf', name: 'Domates rafı', cost: 35, x: -2, z: -1.6, req: ['domTarla'] },
+  { id: 'domTarla', name: 'Domates bahçesi', cost: 40, x: -15.6, z: 5.8, minEarned: 1 },
+  { id: 'domRaf', name: 'Domates rafı', cost: 35, x: -2.15, z: -1.6, req: ['domTarla'] },
   { id: 'canta', name: 'Geniş sepet', cost: 60, x: -8.5, z: 4, req: ['domRaf'] },
   { id: 'ayakkabi', name: 'Rahat terlik', cost: 80, x: -5.6, z: 4, req: ['domRaf'] },
   { id: 'kasiyer', name: 'Kasiyer tut', cost: 150, x: 1.6, z: 2.3, req: ['domRaf'] },
   { id: 'cirak', name: 'Toplayıcı tut', cost: 240, x: 0.2, z: 4, req: ['kasiyer'] },
   { id: 'tabela', name: 'Mahalleye ilan', cost: 220, x: -2.7, z: 4, req: ['kasiyer'] },
   { id: 'firin', name: 'Taş fırın', cost: 220, x: 15, z: -2.6, req: ['kasiyer'] },
-  { id: 'ekmekRaf', name: 'Ekmek rafı', cost: 140, x: 2, z: -1.6, req: ['firin'] },
+  { id: 'ekmekRaf', name: 'Ekmek rafı', cost: 140, x: 2.15, z: -1.6, req: ['firin'] },
   { id: 'canta2', name: 'Dev sepet', cost: 220, x: -5.9, z: 7.6, req: ['canta', 'firin'] },
   { id: 'muhasebe', name: 'Muhasebeci tut', cost: 400, x: 11.4, z: 1, req: ['ekmekRaf', 'cirak'] },
   { id: 'ayranHane', name: 'Ayran makinesi', cost: 450, x: 15, z: 3.8, req: ['ekmekRaf'] },
-  { id: 'ayranRaf', name: 'Ayran dolabı', cost: 300, x: 6, z: -1.6, req: ['ayranHane'] },
+  { id: 'ayranRaf', name: 'Ayran dolabı', cost: 300, x: 6.5, z: -1.6, req: ['ayranHane'] },
   { id: 'cirak2', name: 'İkinci toplayıcı', cost: 600, x: 4, z: 7.6, req: ['ayranRaf', 'cirak'] },
   { id: 'elmaBahce', name: 'Elma bahçesi', cost: 700, x: -25.2, z: -2.2, req: ['ayranRaf'] },
-  { id: 'elmaRaf', name: 'Elma rafı', cost: 450, x: -8.4, z: 1, req: ['elmaBahce'] },
+  { id: 'elmaRaf', name: 'Elma rafı', cost: 450, x: -8.5, z: 1, req: ['elmaBahce'] },
   { id: 'simitAraba', name: 'Simit arabası', cost: 950, x: -25.2, z: 4.2, req: ['elmaRaf'] },
-  { id: 'simitRaf', name: 'Simit rafı', cost: 600, x: -5, z: 1, req: ['simitAraba'] },
+  { id: 'simitRaf', name: 'Simit rafı', cost: 600, x: -4.55, z: 1, req: ['simitAraba'] },
   { id: 'cirak3', name: 'Üçüncü toplayıcı', cost: 1100, x: -2.6, z: 7.6, req: ['simitRaf', 'cirak2'] },
   { id: 'kumes', name: 'Tavuk kümesi', cost: 1400, x: 24, z: -2.6, req: ['simitRaf'] },
-  { id: 'yumurtaRaf', name: 'Yumurta rafı', cost: 900, x: -0.2, z: 1, req: ['kumes'] },
+  { id: 'yumurtaRaf', name: 'Yumurta rafı', cost: 900, x: -0.6, z: 1, req: ['kumes'] },
   { id: 'mandira', name: 'Peynir mandırası', cost: 2000, x: 24, z: 3.8, req: ['yumurtaRaf'] },
-  { id: 'peynirRaf', name: 'Peynir dolabı', cost: 1300, x: 3, z: 1, req: ['mandira'] },
+  { id: 'peynirRaf', name: 'Peynir dolabı', cost: 1300, x: 3.35, z: 1, req: ['mandira'] },
   { id: 'arkaSalon', name: 'Arka salonu aç', cost: 900, x: 9, z: -3.3, req: ['ayranRaf'] },
   { id: 'avlu', name: 'Üretim avlusu', cost: 800, x: 28.6, z: 1, req: ['arkaSalon'] },
   { id: 'ahir', name: 'Süt ahırı', cost: 900, x: 35, z: -2.6, req: ['avlu'] },
-  { id: 'sutDolap', name: 'Süt dolabı', cost: 500, x: -6, z: -12.4, req: ['ahir'] },
+  { id: 'sutDolap', name: 'Süt dolabı', cost: 500, x: -6.5, z: -12.4, req: ['ahir'] },
   { id: 'gazozMak', name: 'Gazoz makinesi', cost: 1100, x: 35, z: 3.8, req: ['sutDolap'] },
-  { id: 'gazozDolap', name: 'İçecek dolabı', cost: 650, x: -2, z: -12.4, req: ['gazozMak'] },
-  { id: 'cirak4', name: 'Dördüncü toplayıcı', cost: 1500, x: 6.2, z: -9, req: ['gazozDolap', 'cirak2'] },
+  { id: 'gazozDolap', name: 'İçecek dolabı', cost: 650, x: -2.15, z: -12.4, req: ['gazozMak'] },
+  { id: 'cirak4', name: 'Dördüncü toplayıcı', cost: 1500, x: 8.4, z: -9, req: ['gazozDolap', 'cirak2'] },
   { id: 'sikma', name: 'Meyve sıkma yeri', cost: 1500, x: 43, z: -2.6, req: ['gazozDolap'] },
-  { id: 'meyveDolap', name: 'Meyve suyu dolabı', cost: 900, x: 2, z: -12.4, req: ['sikma'] },
+  { id: 'meyveDolap', name: 'Meyve suyu dolabı', cost: 900, x: 2.15, z: -12.4, req: ['sikma'] },
   { id: 'borekFirin', name: 'Börek fırını', cost: 2200, x: 43, z: 3.8, req: ['meyveDolap'] },
-  { id: 'borekRaf', name: 'Börek tezgâhı', cost: 1400, x: 6, z: -12.4, req: ['borekFirin'] },
+  { id: 'borekRaf', name: 'Börek tezgâhı', cost: 1400, x: 6.5, z: -12.4, req: ['borekFirin'] },
   { id: 'guvenlik', name: 'Kapı güvenliği', cost: 4000, x: 6.6, z: 11.2, req: ['arkaSalon', 'yumurtaRaf'] },
   { id: 'kasa2', name: 'İkinci kasa', cost: 2500, x: -6.7, z: 4, req: ['yumurtaRaf', 'cirak3', 'canta', 'ayakkabi'] },
   { id: 'depo', name: 'Toptancıyı aç', cost: 1200, x: 0.3, z: 13.4, req: ['arkaSalon', 'gazozDolap'] },
   { id: 'cipsKoli', name: 'Cips deposu', cost: 1000, x: -12, z: 19.6, req: ['depo'] },
-  { id: 'cipsRaf', name: 'Cips rafı', cost: 600, x: -7, z: -7.4, req: ['cipsKoli'] },
+  { id: 'cipsRaf', name: 'Cips rafı', cost: 600, x: -7.2, z: -7.4, req: ['cipsKoli'] },
   { id: 'cirak5', name: 'Beşinci toplayıcı', cost: 2000, x: -6.6, z: 11.2, req: ['cipsRaf', 'cirak4'] },
   { id: 'cikoKoli', name: 'Çikolata deposu', cost: 1300, x: -4, z: 19.6, req: ['cipsRaf'] },
-  { id: 'cikoRaf', name: 'Çikolata rafı', cost: 800, x: -3.4, z: -7.4, req: ['cikoKoli'] },
+  { id: 'cikoRaf', name: 'Çikolata rafı', cost: 800, x: -3, z: -7.4, req: ['cikoKoli'] },
   { id: 'sabunKoli', name: 'Sabun deposu', cost: 1700, x: 4, z: 19.6, req: ['cikoRaf'] },
-  { id: 'sabunRaf', name: 'Sabun rafı', cost: 1100, x: 0.2, z: -7.4, req: ['sabunKoli'] },
+  { id: 'sabunRaf', name: 'Sabun rafı', cost: 1100, x: 1.2, z: -7.4, req: ['sabunKoli'] },
   { id: 'cirak6', name: 'Altıncı toplayıcı', cost: 2600, x: -10.6, z: 11.2, req: ['sabunRaf', 'cirak5'] },
   { id: 'deterjanKoli', name: 'Deterjan deposu', cost: 2400, x: 12, z: 19.6, req: ['sabunRaf'] },
-  { id: 'deterjanRaf', name: 'Deterjan rafı', cost: 1500, x: 3.8, z: -7.4, req: ['deterjanKoli'] },
+  { id: 'deterjanRaf', name: 'Deterjan rafı', cost: 1500, x: 5.4, z: -7.4, req: ['deterjanKoli'] },
 ];
 const pops = [];
 function reveal(group, anim) { group.visible = true; if (anim) pops.push({ o: group, t: 0 }); }
 function openSource(type, anim) {
   const s = sources[type]; s.unlocked = true; reveal(s.group, anim); fillSlots(s, true);
   if (s.solid) solids.push(s.solid);
+  if (s.fence) solids.push(...s.fence);
 }
 function openShelf(type, anim) { const s = shelves[type]; s.unlocked = true; reveal(s.group, anim); solids.push(s.solid); }
 function applyUnlock(id, anim) {
