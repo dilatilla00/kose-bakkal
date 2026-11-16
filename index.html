@@ -100,6 +100,33 @@ body {
 }
 .tools button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 .tools button:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
+.tools #upBtn { font-size: 24px; }
+.tools #upBtn.ready { background: var(--mustard); animation: nudge 1.6s ease-in-out infinite; }
+@keyframes nudge { 0%, 80%, 100% { transform: none; } 88% { transform: translateY(-3px) rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce) { .tools #upBtn.ready { animation: none; } }
+/* Geliştirmeler ve çevrimdışı kazanç panelleri */
+.upList { display: grid; gap: 8px; }
+.upRow {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink);
+  padding: 6px 10px; text-align: left;
+}
+.upRow b { display: block; font-size: 18px; line-height: 1.2; }
+.upRow b span { font-size: 14px; color: #1f8a70; }
+.upRow small { display: block; font-size: 14px; font-weight: 600; line-height: 1.25; color: #5b5870; }
+.upBuy {
+  min-width: 88px; min-height: 44px; padding: 0 8px; cursor: pointer; touch-action: manipulation;
+  font: 800 17px var(--font); color: var(--ink); background: var(--mustard); font-variant-numeric: tabular-nums;
+  border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink);
+}
+.upBuy:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.upBuy:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
+.upBuy.poor { background: #e7e1d3; color: #6f6b80; }
+.upBuy.max, .upBuy.locked { background: transparent; box-shadow: none; border-color: transparent; cursor: default; font-size: 15px; }
+.upBuy.max { color: #1f8a70; }
+.upBuy.locked { color: #6f6b80; }
+.upMoney { font-size: 26px; font-weight: 800; }
+.offAmount { font-size: 44px; font-weight: 800; line-height: 1.2; color: #1f8a70; }
 #hint {
   justify-self: center; max-width: 100%;
   font-size: 19px; text-align: center; background: var(--ink); color: var(--paper);
@@ -214,6 +241,8 @@ body {
   .logo { font-size: 32px; }
   .menuBtn, .menuBtn.primary { min-height: 46px; font-size: 19px; }
   #pStyle .menuBtn { grid-column: 1 / -1; }
+  .upList { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
+  #pUpgrade .menuBtn, #pOffline .menuBtn { grid-column: 1 / -1; }
 }
 #fail { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: var(--sky); font-size: 20px; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 </style>
@@ -227,6 +256,7 @@ body {
   </div>
   <div class="tools">
     <button id="styleBtn" type="button" aria-label="Dükkânı özelleştir">Boya</button>
+    <button id="upBtn" type="button" aria-label="Geliştirmeler" hidden>↑</button>
     <button id="pauseBtn" type="button" aria-label="Oyunu duraklat">II</button>
   </div>
   <div id="hint" class="sticker">Karpuz topla</div>
@@ -263,6 +293,8 @@ body {
         <li>Müşteriyi bekletme: balonu kızarınca sabrı bitiyor. Kızıp giderse yıldızın düşer, yıldızın yüksekse bahşiş alırsın.</li>
         <li>Hırsız gelince yanına koş ve VUR düğmesine bas. Düşürdüğü ürünleri toplayıp rafına geri koy.</li>
         <li>Rafın veya dolabın önüne gelince çıkan düğmeyle kapasitesini 18 ürüne kadar büyüt.</li>
+        <li>Üstteki ↑ düğmesiyle geliştirme al: zam yap, hasadı hızlandır, daha çok müşteri çek.</li>
+        <li>Kasiyerin varsa dükkân sen yokken de satış yapar, dönünce paranı topla.</li>
       </ol>
     </div>
     <button class="menuBtn primary" type="button" data-back>Tamam</button>
@@ -284,6 +316,19 @@ body {
       <p id="styleNote" class="styleLine" aria-live="polite">Rengi seç, satın aldıkların sende kalır.</p>
     </div>
     <button class="menuBtn primary" type="button" data-back>Bitti</button>
+  </div>
+  <div id="pUpgrade" class="panel" hidden>
+    <div class="card"><h2>Geliştirmeler</h2><div id="upMoney" class="upMoney">₺0</div></div>
+    <div id="upList" class="upList"></div>
+    <button id="btnUpClose" class="menuBtn primary" type="button">Dükkâna dön</button>
+  </div>
+  <div id="pOffline" class="panel" hidden>
+    <div class="card">
+      <h2>Hoş geldin!</h2>
+      <div>Sen yokken çalışanların dükkânı işletti.</div>
+      <div id="offAmount" class="offAmount">₺0</div>
+    </div>
+    <button id="btnOffCollect" class="menuBtn primary" type="button">Topla</button>
   </div>
   <div id="pInstall" class="panel" hidden>
     <div class="card">
@@ -589,6 +634,11 @@ const PRODUCT = {
   sut: { name: 'Süt', price: 26 }, gazoz: { name: 'Gazoz', price: 34 }, meyve: { name: 'Meyve suyu', price: 42 }, borek: { name: 'Börek', price: 52 },
   cips: { name: 'Cips', price: 28 }, cikolata: { name: 'Çikolata', price: 36 }, sabun: { name: 'Sabun', price: 46 }, deterjan: { name: 'Deterjan', price: 60 },
 };
+/* Geliştirme seviyeleri (kayıtta saklanır): satış fiyatı "Zam yap" ile, çalışan hızı "Çalışan eğitimi" ile artar */
+const LV = {};
+const lv = id => LV[id] || 0;
+const price = type => Math.round(PRODUCT[type].price * (1 + 0.15 * lv('fiyat')));
+const staffMult = () => 1 + 0.12 * lv('personel');
 
 function drawIcon(g, type, x, y, r) {
   if (type === 'karpuz') { g.fillStyle = '#2f8a3e'; g.beginPath(); g.ellipse(x, y, r, r * 0.85, 0, 0, 7); g.fill(); g.strokeStyle = '#14592a'; g.lineWidth = r * 0.16; [-0.45, 0, 0.45].forEach(k => { g.beginPath(); g.ellipse(x + k * r * 0.5, y, r * 0.3, r * 0.82, 0, 0, 7); g.stroke(); }); }
@@ -829,7 +879,7 @@ function updateActor(e, dt) {
 const sources = {}, shelves = {};
 const solids = [];
 function addSource(type, group, slotPos, grow, reach, center) {
-  const s = sources[type] = { type, group, grow, reach, center, unlocked: false, solid: null, slots: slotPos.map(p => ({ pos: p, it: null, t: 0 })) };
+  const s = sources[type] = { type, group, grow, baseGrow: grow, reach, center, unlocked: false, solid: null, slots: slotPos.map(p => ({ pos: p, it: null, t: 0 })) };
   return s;
 }
 function fillSlots(src, ripe) {
@@ -1027,14 +1077,15 @@ function makeShelf(type, x, sz, cold) {
   /* Fiyat etiketi */
   const tag = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.4), new THREE.MeshBasicMaterial({ map: canvasTex(192, 52, (c, w, h) => {
     c.fillStyle = '#fffaf0'; c.fillRect(0, 0, w, h); c.fillStyle = INK; c.font = `800 32px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(`${PRODUCT[type].name} ₺${PRODUCT[type].price}`, w / 2, h / 2 + 2);
+    c.fillText(`${PRODUCT[type].name} ₺${price(type)}`, w / 2, h / 2 + 2);
   }) }));
+  const tagEntry = allTex[allTex.length - 1];
   tag.position.set(0, 0.26, 0.72); g.add(tag);
   /* Yükseltilen raf önünde altın şerit taşır */
   const strips = [0.08, 0.46].map(y => {
     const s = box(2.8, 0.07, 0.03, M.mustard, 0, y, 0.72, g); s.visible = false; s.castShadow = false; return s;
   });
-  return shelves[type] = { type, group: g, x, slots, strips, items: [], cap: 12, stand: V(x, 0, sz + 1.5), unlocked: false, solid: { x0: x - 1.45, x1: x + 1.45, z0: sz - 0.8, z1: sz + 0.75 } };
+  return shelves[type] = { type, group: g, x, slots, strips, tagEntry, items: [], cap: 12, stand: V(x, 0, sz + 1.5), unlocked: false, solid: { x0: x - 1.45, x1: x + 1.45, z0: sz - 0.8, z1: sz + 0.75 } };
 }
 makeShelf('karpuz', -6.5, -3.8); makeShelf('domates', -2.15, -3.8); makeShelf('ekmek', 2.15, -3.8); makeShelf('ayran', 6.5, -3.8);
 /* İkinci sıra reyon; arasında ve sağında geçiş koridoru var */
@@ -1399,18 +1450,18 @@ const SAFE_STAND = V(9.3, 0, 1.05);
 let accountant = null;
 function accountantAI(a, dt) {
   if (a.state === 'wait') {
-    moveTo(a, SAFE_STAND, 4.4, dt);
+    moveTo(a, SAFE_STAND, 4.4 * staffMult(), dt);
     if (pile.amount >= 20) a.state = 'go';
   } else if (a.state === 'go') {
     if (pile.amount <= 0) a.state = 'wait';
-    else if (moveTo(a, V(8.3, 0, 2.3), 4.8, dt)) {
+    else if (moveTo(a, V(8.3, 0, 2.3), 4.8 * staffMult(), dt)) {
       a.carried = pile.amount; pile.amount = 0;
       pile.bills.forEach((b, i) => {
         if (i < 10) { b.k = 12; a.stack.push(b); } else { b.t.set(a.pos.x, 1.2, a.pos.z); killItem(b, 0.15); }
       });
       pile.bills = []; a.state = 'back';
     }
-  } else if (moveTo(a, SAFE_STAND, 4.8, dt)) {
+  } else if (moveTo(a, SAFE_STAND, 4.8 * staffMult(), dt)) {
     S.money += a.carried; a.carried = 0;
     a.stack.forEach(b => { b.t.set(9.3, 1.3, -0.4); b.k = 9; killItem(b, 0.14); });
     a.stack.length = 0; a.state = 'wait';
@@ -1424,15 +1475,15 @@ function helperAI(h, dt) {
     const opts = Object.values(shelves)
       .filter(s => s.unlocked && s.items.length < s.cap && sources[s.type].unlocked && ripeCount(sources[s.type]) > 0 && !taken.includes(s))
       .sort((a, b) => a.items.length - b.items.length);
-    if (opts.length) { h.shelf = opts[0]; h.state = 'get'; } else routed(h, V(-8.5, 0, -1.2), 4.4, dt);
+    if (opts.length) { h.shelf = opts[0]; h.state = 'get'; } else routed(h, V(-8.5, 0, -1.2), 4.4 * staffMult(), dt);
   }
   if (h.state === 'get') {
     const n = nearestRipe(sources[h.shelf.type], h.pos);
     if (h.stack.length >= h.cap || !n) { h.state = h.stack.length ? 'put' : 'pick'; }
-    else { if (n.d > 0.9) routed(h, n.slot.pos, 4.6, dt); else tryCollect(h, 1); }
+    else { if (n.d > 0.9) routed(h, n.slot.pos, 4.6 * staffMult(), dt); else tryCollect(h, 1); }
   }
   if (h.state === 'put') {
-    if (routed(h, h.shelf.stand, 4.6, dt)) tryDeposit(h);
+    if (routed(h, h.shelf.stand, 4.6 * staffMult(), dt)) tryDeposit(h);
     if (!h.stack.length) h.state = 'pick';
   }
 }
@@ -1569,7 +1620,7 @@ function updateRegister(reg, dt) {
   /* Ürünler banda iner, tek tek okutulur, poşetlenir */
   if (!head.belt) {
     head.belt = head.stack.splice(0);
-    head.total = head.belt.reduce((sum, it) => sum + PRODUCT[it.type].price, 0);
+    head.total = head.belt.reduce((sum, it) => sum + price(it.type), 0);
     if (S.rep >= 80) head.total = Math.round(head.total * 1.15); /* memnun müşteri bahşiş bırakır */
     const gap = Math.min(0.42, 1.2 / head.belt.length);
     head.belt.forEach((it, i) => { it.t.set(dx + 3.4 + i * gap, 1.18 + HEIGHT[it.type] / 2, 4.22); it.k = 9; it.arc = 0.3; });
@@ -1578,12 +1629,12 @@ function updateRegister(reg, dt) {
   till.beltTex.offset.x -= dt * 0.9;
   const t = head.belt[0];
   if (t) {
-    t.t.x += dt * 2.4;
+    t.t.x += dt * 2.4 * (reg.clerk ? staffMult() : 1);
     if (t.t.x - dx > 5.3) { head.belt.shift(); killItem(t, 0); sfx(1900, 0.05); }
     return;
   }
   reg.payT += dt;
-  if (reg.payT < (reg.clerk ? 0.3 : 0.15)) return;
+  if (reg.payT < (reg.clerk ? 0.3 / staffMult() : 0.15)) return;
   reg.payT = 0;
   queue.shift();
   head.reg = null;
@@ -1903,6 +1954,78 @@ function applyUnlock(id, anim) {
     case 'peynirRaf': openShelf('peynir', anim); break;
   }
 }
+
+/* ---------- Geliştirmeler: her seviye bir öncekinden pahalı, dükkân hep büyür ---------- */
+const UPS = [
+  { id: 'fiyat', name: 'Zam yap', base: 150, max: 40, info: n => `Ürünler %${15 * n} daha pahalı` },
+  { id: 'hasat', name: 'Gübre', base: 120, max: 15, info: n => `Ürünler %${Math.round((1 - Math.pow(0.9, n)) * 100)} daha hızlı yetişir` },
+  { id: 'musteri', name: 'Mahalleye broşür', base: 200, max: 15, info: n => `%${Math.round((1 / Math.pow(0.9, n) - 1) * 100)} daha sık müşteri` },
+  { id: 'sepet', name: 'Büyük sepet', base: 180, max: 10, info: n => `Sepete +${n} ürün sığar` },
+  { id: 'yuruyus', name: 'Spor ayakkabı', base: 100, max: 10, info: n => `%${6 * n} daha hızlı yürürsün` },
+  { id: 'personel', name: 'Çalışan eğitimi', base: 300, max: 15, req: 'kasiyer', info: n => `Çalışanlar %${12 * n} daha hızlı` },
+  { id: 'mesai', name: 'Gece vardiyası', base: 400, max: 11, req: 'kasiyer', info: n => `Sen yokken ${1 + n} saate kadar kazanırsın` },
+];
+const upCost = u => Math.round(u.base * Math.pow(1.5, lv(u.id)) / 10) * 10;
+const upReady = u => !u.req || S.unlocked[u.req];
+const upAffordable = () => UPS.some(u => upReady(u) && lv(u.id) < u.max && S.money >= upCost(u));
+function applyUpgrade(id, n) {
+  if (id === 'hasat') Object.values(sources).forEach(s => { s.grow = s.baseGrow * Math.pow(0.9, lv('hasat')); });
+  if (id === 'sepet') player.cap += n;
+  if (id === 'fiyat') Object.values(shelves).forEach(sh => { redrawTex(sh.tagEntry.t); });
+}
+function buyUpgrade(id) {
+  const u = UPS.find(x => x.id === id);
+  if (!u || !upReady(u) || lv(id) >= u.max) return false;
+  const c = upCost(u);
+  if (S.money < c) return false;
+  S.money -= c; LV[id] = lv(id) + 1;
+  applyUpgrade(id, 1);
+  sfx(880, 0.09); sfx(1320, 0.12, 0.08);
+  save();
+  return true;
+}
+function renderUpgrades() {
+  $('upMoney').textContent = '₺' + Math.floor(S.money).toLocaleString('tr-TR');
+  const root = $('upList'); root.textContent = '';
+  UPS.forEach(u => {
+    const n = lv(u.id), max = n >= u.max, c = upCost(u);
+    const row = document.createElement('div'); row.className = 'upRow';
+    const info = document.createElement('div'), title = document.createElement('b'), lvl = document.createElement('span'), note = document.createElement('small');
+    title.textContent = u.name + ' '; lvl.textContent = `Sv ${n}/${u.max}`; title.append(lvl);
+    note.textContent = max ? u.info(n) : 'Sonraki: ' + u.info(n + 1);
+    info.append(title, note);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'upBuy';
+    if (!upReady(u)) { b.classList.add('locked'); b.disabled = true; b.textContent = 'Kasiyerle açılır'; }
+    else if (max) { b.classList.add('max'); b.disabled = true; b.textContent = 'Tamam'; }
+    else {
+      b.textContent = '₺' + c.toLocaleString('tr-TR'); b.classList.toggle('poor', S.money < c);
+      b.setAttribute('aria-label', `${u.name} al, ₺${c}`);
+      b.addEventListener('click', () => {
+        if (buyUpgrade(u.id)) { renderUpgrades(); updateHud(); popMoney(); return; }
+        b.textContent = 'Para yetmiyor'; sfx(190, 0.14);
+        setTimeout(renderUpgrades, 900);
+      });
+    }
+    row.append(info, b); root.append(row);
+  });
+}
+
+/* ---------- Çevrimdışı kazanç: kasiyer varsa dükkân sen yokken de satar ---------- */
+let offlinePending = 0;
+function offlineEarnings(ms) {
+  const sec = ms / 1000;
+  if (!S.unlocked.kasiyer || !(sec >= 60) || !(S.rate > 0)) return 0;
+  const capSec = (1 + lv('mesai')) * 3600;
+  const eff = helpers.length ? 0.5 : 0.25;
+  return Math.floor(S.rate * Math.min(sec, capSec) * eff);
+}
+function offerOffline(amount) {
+  if (!(amount >= 1)) return false;
+  offlinePending = amount;
+  $('offAmount').textContent = '₺' + amount.toLocaleString('tr-TR');
+  showPanel('pOffline');
+  return true;
+}
 const padGeo = new THREE.PlaneGeometry(2.8, 2.8);
 PADS.forEach(p => {
   const g = new THREE.Group(); g.position.set(p.x, 0.07, p.z); g.rotation.x = -Math.PI / 2; g.visible = false; scene.add(g);
@@ -2016,6 +2139,7 @@ function hintNow() {
 
   const fresh = openShelves().find(s => sources[s.type].unlocked && !seen['harvest:' + s.type]);
   if (fresh) return { text: `${PRODUCT[fresh.type].name} topla`, at: sources[fresh.type].center, y: 2 };
+  if (!seen.upgrade && !$('upBtn').hidden && upAffordable()) return { text: 'Üstteki ↑ ile dükkânı geliştir', at: player.pos, y: 0 };
   return null;
 }
 let hintT = 0, curHint = null, lastHintText = null;
@@ -2078,7 +2202,8 @@ function movePlayer(dt) {
   if (len > 1) { ix /= len; iy /= len; }
   const cy = Math.cos(YAW), sy = Math.sin(YAW);
   const wx = cy * ix - sy * iy, wz = -sy * ix - cy * iy;
-  player.pos.x += wx * speed * dt; player.pos.z += wz * speed * dt;
+  const walkSpeed = speed * (1 + 0.06 * lv('yuruyus'));
+  player.pos.x += wx * walkSpeed * dt; player.pos.z += wz * walkSpeed * dt;
   player.face = angleTo(player.face, Math.atan2(wx, wz), Math.min(1, dt * 14));
   player.moving = true; S.walked = true; markHint('walk');
   const R = 0.45;
@@ -2137,12 +2262,15 @@ function updateHud() {
   if (staff !== lastStaff) { lastStaff = staff; $('staff').textContent = staff; }
   const done = PADS.filter(p => S.unlocked[p.id]).length;
   $('progressFill').style.width = (done / PADS.length * 100) + '%';
-  if (done === PADS.length && !S.done) { S.done = true; toast('Mahallenin en sevilen bakkalı sensin!', 4500); confetti(V(player.pos.x, 2, player.pos.z)); save(); }
+  if (done === PADS.length && !S.done) { S.done = true; toast('Mahallenin en sevilen bakkalı sensin! ↑ ile büyümeye devam et', 4500); confetti(V(player.pos.x, 2, player.pos.z)); save(); }
+  const upBtn = $('upBtn');
+  if (upBtn.hidden && (S.earned >= 150 || Object.keys(LV).length)) upBtn.hidden = false;
+  if (!upBtn.hidden) upBtn.classList.toggle('ready', upAffordable());
 }
 
 /* ---------- Menüler ---------- */
 let gameState = 'menu';
-const PANELS = ['pMain', 'pPause', 'pHow', 'pSettings', 'pInstall', 'pStyle'];
+const PANELS = ['pMain', 'pPause', 'pHow', 'pSettings', 'pInstall', 'pStyle', 'pUpgrade', 'pOffline'];
 function showPanel(id) {
   PANELS.forEach(p => { $(p).hidden = p !== id; });
   $('menu').scrollTop = 0;
@@ -2251,6 +2379,14 @@ $('btnPlay').addEventListener('click', play);
 $('btnResume').addEventListener('click', play);
 $('btnHome').addEventListener('click', goHome);
 $('pauseBtn').addEventListener('click', pause);
+$('upBtn').addEventListener('click', () => { if (gameState !== 'play') return; markHint('upgrade'); pause(); renderUpgrades(); showPanel('pUpgrade'); });
+$('btnUpClose').addEventListener('click', play);
+$('btnOffCollect').addEventListener('click', () => {
+  S.money += offlinePending; S.earned += offlinePending; rateE += offlinePending; offlinePending = 0;
+  sfx(990, 0.08); sfx(1240, 0.08, 0.06); sfx(1480, 0.1, 0.12);
+  save(); syncMainMenu(); updateHud(); popMoney();
+  showPanel(gameState === 'menu' ? 'pMain' : 'pPause');
+});
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => showPanel(b.dataset.go)));
 document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => showPanel(gameState === 'menu' ? 'pMain' : 'pPause')));
 addEventListener('keydown', e => {
@@ -2279,7 +2415,7 @@ const SAVE_KEY = 'kose-bakkal-v1';
 let noSave = false;
 function save() {
   if (noSave) return;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, hints: S.hints, shelves: S.shelves, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, hints: S.hints, shelves: S.shelves, lv: LV, rate: S.rate, lastSeen: Date.now(), paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
 }
 /* Kayıt dışarıdan değiştirilebilir: yalnızca geçerli değerler ve oyunda var olan seçenekler yüklenir */
 const clampNum = (v, max) => (Number.isFinite(v) ? Math.min(max, Math.max(0, v)) : 0);
@@ -2311,15 +2447,28 @@ function load() {
     if (sh.unlocked && (shelfCaps[sh.type] === 15 || shelfCaps[sh.type] === 18)) { S.shelves[sh.type] = shelfCaps[sh.type]; setShelfCap(sh, shelfCaps[sh.type]); }
   });
   if (d.hints && typeof d.hints === 'object' && !Array.isArray(d.hints)) {
-    Object.keys(d.hints).forEach(k => { if (d.hints[k] === true && /^(walk|register|pile|full|(harvest|stock):[a-z]+)$/.test(k)) S.hints[k] = true; });
+    Object.keys(d.hints).forEach(k => { if (d.hints[k] === true && /^(walk|register|pile|full|upgrade|(harvest|stock):[a-z]+)$/.test(k)) S.hints[k] = true; });
   } else if (S.earned > 0) {
     /* Yönlendirme kaydı olmayan eski oyun: oyuncunun zaten yaptığı işler tekrar gösterilmez */
     ['walk', 'register', 'pile', 'full'].forEach(markHint);
     openShelves().forEach(s => { markHint('harvest:' + s.type); markHint('stock:' + s.type); });
   }
+  /* Geliştirmeler: yalnızca listede olan ve sınırı aşmayan seviyeler */
+  const levels = asRecord(d.lv);
+  UPS.forEach(u => {
+    const n = Math.floor(clampNum(levels[u.id], u.max));
+    if (n > 0 && upReady(u)) { LV[u.id] = n; applyUpgrade(u.id, n); }
+  });
+  S.rate = clampNum(d.rate, 1e5);
+  if (Number.isFinite(d.lastSeen) && d.lastSeen <= Date.now()) offlinePending = offlineEarnings(Date.now() - d.lastSeen);
 }
 addEventListener('pagehide', save);
-document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); pause(); } });
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = Date.now(); save(); pause(); return; }
+  if (hiddenAt && !offlinePending) offerOffline(offlineEarnings(Date.now() - hiddenAt));
+  hiddenAt = 0;
+});
 
 /* ---------- Başlangıç ---------- */
 openSource('karpuz', false);
@@ -2329,6 +2478,7 @@ applyStyle();
 $('shopName').value = S.style.name;
 applyQuality();
 syncMainMenu();
+offerOffline(offlinePending);
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   try {
     /* Yeni sürüm geldiğinde ana menüdeyse hemen geçer; oyun ortasında bölmez */
@@ -2346,7 +2496,7 @@ if (document.fonts && document.fonts.load) {
 }
 
 /* ---------- Döngü ---------- */
-let tickDt = 0, lastT = performance.now(), saveT = 0;
+let tickDt = 0, lastT = performance.now(), saveT = 0, rateT = 0, rateE = S.earned;
 const camTarget = V(0, 0, 0), camLook = player.pos.clone();
 const viewPos = V(0, 19, 32), viewLook = V(0, 0.6, 2), wantLook = V(0, 0, 0);
 let camK = 1.5, autoLowDone = false, fpsT = 0, fpsN = 0;
@@ -2367,8 +2517,14 @@ function step(dt, time) {
   if ((spawnT -= dt) <= 0) {
     const open = openShelves().length;
     const repPace = S.rep >= 80 ? 0.85 : S.rep < 40 ? 1.5 : 1;
-    spawnT = 5.5 * adBoost * repPace * (rushOn ? 0.4 : 1) / (1 + 0.2 * (open - 1)) * rnd(0.8, 1.2);
-    if (customers.length < Math.min(16, 4 + open * 2) + (rushOn ? 4 : 0)) spawnCustomer();
+    spawnT = 5.5 * adBoost * repPace * Math.pow(0.9, lv('musteri')) * (rushOn ? 0.4 : 1) / (1 + 0.2 * (open - 1)) * rnd(0.8, 1.2);
+    if (customers.length < Math.min(16, 4 + open * 2) + Math.floor(lv('musteri') / 3) + (rushOn ? 4 : 0)) spawnCustomer();
+  }
+  /* Kazanç hızı (₺/sn): çevrimdışı kazancı hesaplamak için kayan ortalama */
+  if ((rateT += dt) >= 15) {
+    const inst = (S.earned - rateE) / rateT;
+    S.rate = S.rate > 0 ? S.rate * 0.75 + inst * 0.25 : inst;
+    rateT = 0; rateE = S.earned;
   }
   for (let i = customers.length - 1; i >= 0; i--) { const c = customers[i]; updateCustomer(c, dt); if (customers.includes(c)) updateActor(c, dt); }
   registers.forEach(r => updateRegister(r, dt));
@@ -2428,6 +2584,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 /* Test kancası yalnızca yerel geliştirmede açılır */
-if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, registers, PADS, helpers, step, dropped, hitThief, get accountant() { return accountant; }, get thief() { return thief; }, get guard() { return guard; }, callThief() { thiefT = 0; } };
+if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, registers, PADS, helpers, step, dropped, hitThief, get accountant() { return accountant; }, get thief() { return thief; }, get guard() { return guard; }, callThief() { thiefT = 0; }, LV, UPS, buyUpgrade, price, offlineEarnings };
 })();
 </script>
