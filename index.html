@@ -1806,13 +1806,13 @@ function applyUnlock(id, anim) {
 
 /* ---------- Geliştirmeler: her seviye bir öncekinden pahalı, dükkân hep büyür ---------- */
 const UPS = [
-  { id: 'fiyat', name: 'Zam yap', base: 150, max: 40, info: n => `Ürünler %${15 * n} daha pahalı` },
-  { id: 'hasat', name: 'Gübre', base: 120, max: 15, info: n => `Ürünler %${Math.round((1 - Math.pow(0.9, n)) * 100)} daha hızlı yetişir` },
-  { id: 'musteri', name: 'Mahalleye broşür', base: 200, max: 15, info: n => `%${Math.round((1 / Math.pow(0.9, n) - 1) * 100)} daha sık müşteri` },
-  { id: 'sepet', name: 'Büyük sepet', base: 180, max: 10, info: n => `Sepete +${n} ürün sığar` },
-  { id: 'yuruyus', name: 'Spor ayakkabı', base: 100, max: 10, info: n => `%${6 * n} daha hızlı yürürsün` },
-  { id: 'personel', name: 'Çalışan eğitimi', base: 300, max: 15, req: 'kasiyer', info: n => `Çalışanlar %${12 * n} daha hızlı` },
-  { id: 'mesai', name: 'Gece vardiyası', base: 400, max: 11, req: 'kasiyer', info: n => `Sen yokken ${1 + n} saate kadar kazanırsın` },
+  { id: 'fiyat', name: 'Zam yap', base: 200, max: 40, info: n => `Ürünler %${15 * n} daha pahalı` },
+  { id: 'hasat', name: 'Gübre', base: 160, max: 15, info: n => `Ürünler %${Math.round((1 - Math.pow(0.9, n)) * 100)} daha hızlı yetişir` },
+  { id: 'musteri', name: 'Mahalleye broşür', base: 260, max: 15, info: n => `%${Math.round((1 / Math.pow(0.9, n) - 1) * 100)} daha sık müşteri` },
+  { id: 'sepet', name: 'Büyük sepet', base: 230, max: 10, info: n => `Sepete +${n} ürün sığar` },
+  { id: 'yuruyus', name: 'Spor ayakkabı', base: 130, max: 10, info: n => `%${6 * n} daha hızlı yürürsün` },
+  { id: 'personel', name: 'Çalışan eğitimi', base: 390, max: 15, req: 'kasiyer', info: n => `Çalışanlar %${12 * n} daha hızlı` },
+  { id: 'mesai', name: 'Gece vardiyası', base: 520, max: 11, req: 'kasiyer', info: n => `Sen yokken ${1 + n} saate kadar kazanırsın` },
 ];
 const upCost = u => Math.round(u.base * Math.pow(1.5, lv(u.id)) / 10) * 10;
 const upReady = u => !u.req || S.unlocked[u.req];
