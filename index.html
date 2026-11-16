@@ -1426,7 +1426,7 @@ function nameTag(actor, text, color) {
   sp.scale.set(1.6 * spriteScale(), 0.44 * spriteScale(), 1); sp.position.y = 2.15; sp.renderOrder = 9; actor.rig.g.add(sp);
 }
 function addHelper(i) {
-  const look = [{ skin: 0xd9a273, cap: 0xf5b92e }, { skin: 0xf2c6a0, cap: 0x36a6c9 }, { skin: 0xa86f48, cap: 0xe4472f }, { skin: 0xf7d9bf, cap: 0xe87fb0 }, { skin: 0xd9a273, cap: 0x8b5fbf }, { skin: 0xf2c6a0, cap: 0x5fb25a }][i];
+  const look = [{ skin: 0xd9a273, cap: 0xf5b92e }, { skin: 0xf2c6a0, cap: 0x36a6c9 }, { skin: 0xa86f48, cap: 0xe4472f }, { skin: 0xf7d9bf, cap: 0xe87fb0 }, { skin: 0xd9a273, cap: 0x8b5fbf }, { skin: 0xf2c6a0, cap: 0x5fb25a }, { skin: 0xa86f48, cap: 0xf5912e }][i];
   const h = newActor(Object.assign({}, STAFF, look), V(-8.5 + i * 1.5, 0, -1.2), 4);
   nameTag(h, 'Toplayıcı');
   h.state = 'pick'; h.shelf = null; helpers.push(h);
@@ -1731,6 +1731,7 @@ const PADS = [
   { id: 'cirak6', name: 'Altıncı toplayıcı', cost: 2600, x: -10.6, z: 11.2, req: ['sabunRaf', 'cirak5'] },
   { id: 'deterjanKoli', name: 'Deterjan deposu', cost: 2400, x: 12, z: 19.6, req: ['sabunRaf'] },
   { id: 'deterjanRaf', name: 'Deterjan rafı', cost: 1500, x: 5.4, z: -7.4, req: ['deterjanKoli'] },
+  { id: 'cirak7', name: 'Yedinci toplayıcı', cost: 3400, x: 6.6, z: 11.2, req: ['deterjanRaf', 'cirak6'] },
 ];
 const pops = [];
 function reveal(group, anim) { group.visible = true; if (anim) pops.push({ o: group, t: 0 }); }
@@ -1783,6 +1784,7 @@ function applyUnlock(id, anim) {
     case 'cirak4': addHelper(3); break;
     case 'cirak5': addHelper(4); break;
     case 'cirak6': addHelper(5); break;
+    case 'cirak7': addHelper(6); break;
     case 'depo': depotOpen = true; reveal(depot, anim); break;
     case 'cipsKoli': openSource('cips', anim); break;
     case 'cipsRaf': openShelf('cips', anim); break;
@@ -2102,7 +2104,7 @@ function updateHud() {
   const stars = Math.max(1, Math.round(S.rep / 20));
   const rep = '★'.repeat(stars) + '☆'.repeat(5 - stars);
   if (rep !== lastRep) { lastRep = rep; $('rep').textContent = rep; }
-  const staff = 'Çalışan ' + ((cashier ? 1 : 0) + (cashier2 ? 1 : 0) + helpers.length + (accountant ? 1 : 0)) + '/9';
+  const staff = 'Çalışan ' + ((cashier ? 1 : 0) + (cashier2 ? 1 : 0) + helpers.length + (accountant ? 1 : 0)) + '/10';
   if (staff !== lastStaff) { lastStaff = staff; $('staff').textContent = staff; }
   const done = PADS.filter(p => S.unlocked[p.id]).length;
   $('progressFill').style.width = (done / PADS.length * 100) + '%';
