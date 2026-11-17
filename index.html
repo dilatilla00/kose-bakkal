@@ -92,7 +92,8 @@ body {
 #bag, #staff { font-size: 18px; align-self: center; }
 #staff { background: #1f8a70; color: var(--paper); }
 #bag.full { background: var(--tomato); color: var(--paper); }
-.tools { display: flex; gap: 8px; pointer-events: auto; }
+/* Dar ekranda düğmeler taşmaz, alt satıra geçer */
+.tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; pointer-events: auto; }
 .tools button {
   font: 800 17px var(--font); color: var(--ink); background: var(--paper);
   border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink);
@@ -100,7 +101,7 @@ body {
 }
 .tools button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 .tools button:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
-.tools #upBtn { font-size: 24px; }
+.tools #upBtn { width: auto; padding: 0 10px; font-size: 15px; }
 .tools #upBtn.ready { background: var(--mustard); animation: nudge 1.6s ease-in-out infinite; }
 @keyframes nudge { 0%, 80%, 100% { transform: none; } 88% { transform: translateY(-3px) rotate(-6deg); } }
 @media (prefers-reduced-motion: reduce) { .tools #upBtn.ready { animation: none; } }
@@ -224,7 +225,9 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
 .swatch:focus-visible { outline: 3px solid var(--tomato); outline-offset: 1px; }
 /* Dik telefon: bilgiler tek sıra, altında ipucu ve düğmeler */
 @media (max-width: 520px) {
-  #hud { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "stats stats" "hint tools"; gap: 6px 8px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+  /* Dik telefon: bilgiler, altında düğmeler sağda, en altta ipucu tam genişlikte */
+  #hud { grid-template-columns: minmax(0, 1fr); grid-template-areas: "stats" "tools" "hint"; gap: 6px 8px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+  .tools { justify-self: end; }
   .stats { flex-wrap: nowrap; gap: 6px; }
   .sticker { border-width: 2px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; }
   #money { font-size: clamp(18px, 5.8vw, 22px); padding: 0 8px; }
@@ -277,10 +280,9 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
     <div id="staff" class="sticker">Çalışan 0/10</div>
   </div>
   <div class="tools">
-    <button id="styleBtn" type="button" aria-label="Dükkânı özelleştir">Boya</button>
     <button id="buildBtn" type="button" aria-label="Yap ve yerleştir">Yap</button>
     <button id="brBtn" type="button" aria-label="Şubeler" hidden>Şube</button>
-    <button id="upBtn" type="button" aria-label="Geliştirmeler" hidden>↑</button>
+    <button id="upBtn" type="button" aria-label="Geliştirmeler" hidden>Geliştir</button>
     <button id="pauseBtn" type="button" aria-label="Oyunu duraklat">II</button>
   </div>
   <div id="hint" class="sticker">Karpuz topla</div>
@@ -316,7 +318,8 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
         <li>Üstteki Yap ile raf ve üretim yeri al, istediğin yere koy. Yerleri düzenle ile sonradan taşıyıp döndürebilirsin.</li>
         <li>Müşteriyi bekletme: balonu kızarınca sabrı bitiyor. Kızıp giderse yıldızın düşer, yıldızın yüksekse bahşiş alırsın.</li>
         <li>Rafın veya dolabın önüne gelince çıkan düğmeyle kapasitesini 18 ürüne kadar büyüt.</li>
-        <li>Üstteki ↑ düğmesiyle geliştirme al: zam yap, hasadı hızlandır, daha çok müşteri çek.</li>
+        <li>Üstteki Geliştir düğmesiyle geliştirme al: zam yap, hasadı hızlandır, daha çok müşteri çek.</li>
+        <li>Dükkânın rengini ve adını durdurma menüsündeki Dükkânı özelleştir'den değiştir.</li>
         <li>Kasiyerin varsa dükkân sen yokken de satış yapar, dönünce paranı topla.</li>
         <li>Üstteki Şube düğmesiyle yeni şube aç. Şubeler kendi kendine kazanır; kasaları dolunca topla, tezgâhtar ve raf alıp büyüt.</li>
       </ol>
@@ -2571,7 +2574,7 @@ function hintNow() {
 
   const fresh = openShelves().find(s => sources[s.type].unlocked && !seen['harvest:' + s.type]);
   if (fresh) return { text: `${PRODUCT[fresh.type].name} topla`, at: sources[fresh.type].center, y: 2 };
-  if (!seen.upgrade && !$('upBtn').hidden && upAffordable()) return { text: 'Üstteki ↑ ile dükkânı geliştir', at: player.pos, y: 0 };
+  if (!seen.upgrade && !$('upBtn').hidden && upAffordable()) return { text: 'Üstteki Geliştir ile dükkânı büyüt', at: player.pos, y: 0 };
   return null;
 }
 let hintT = 0, curHint = null, lastHintText = null;
@@ -2699,7 +2702,7 @@ function updateHud() {
   if (staff !== lastStaff) { lastStaff = staff; $('staff').textContent = staff; }
   const done = PADS.filter(p => S.unlocked[p.id]).length;
   $('progressFill').style.width = (done / PADS.length * 100) + '%';
-  if (done === PADS.length && !S.done) { S.done = true; toast('Mahallenin en sevilen bakkalı sensin! ↑ ile büyümeye devam et', 4500); confetti(V(player.pos.x, 2, player.pos.z)); save(); }
+  if (done === PADS.length && !S.done) { S.done = true; toast('Mahallenin en sevilen bakkalı sensin! Geliştir ile büyümeye devam et', 4500); confetti(V(player.pos.x, 2, player.pos.z)); save(); }
   const upBtn = $('upBtn');
   if (upBtn.hidden && (S.earned >= 150 || Object.keys(LV).length)) upBtn.hidden = false;
   if (!upBtn.hidden) upBtn.classList.toggle('ready', upAffordable());
@@ -2790,7 +2793,6 @@ function cleanName(v) {
 $('shopName').addEventListener('input', e => {
   S.style.name = cleanName(e.target.value) || 'KÖŞE BAKKAL'; applyStyle(); save();
 });
-$('styleBtn').addEventListener('click', () => { pause(); showPanel('pStyle'); });
 function syncSettings() {
   $('btnSound').textContent = 'Ses: ' + (S.sound ? 'Açık' : 'Kapalı');
   $('btnQuality').textContent = 'Grafik: ' + (S.quality === 'low' ? 'Düşük' : 'Yüksek');
