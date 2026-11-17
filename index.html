@@ -140,6 +140,30 @@ body {
 .brBar.full i { background: var(--tomato); }
 .brBtns { display: grid; gap: 6px; }
 .upBuy.ghost { background: var(--paper); }
+/* Reklam düğmeleri, görevler, günlük hediye */
+.menuBtn.ad { font-size: 18px; background: #bfe3ec; }
+.menuBtn:disabled { background: #e7e1d3; color: #6f6b80; box-shadow: 0 2px 0 var(--ink); cursor: default; transform: none; }
+#questBtn {
+  position: fixed; pointer-events: auto; cursor: pointer; touch-action: manipulation;
+  right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  min-height: 48px; padding: 4px 12px; font: 800 16px var(--font); color: var(--ink); background: var(--paper);
+  border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+}
+#questBtn.ready { background: var(--mustard); animation: nudge 1.6s ease-in-out infinite; }
+#questBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+#questBtn:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { #questBtn.ready { animation: none; } }
+@media (max-height: 460px) { #questBtn { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); } }
+.dayGrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+.dayBox { padding: 3px 0; font-size: 11px; line-height: 1.2; text-align: center; background: #fff; border: 2px solid var(--ink); border-radius: 10px; }
+.dayBox b { display: block; font-size: 13px; }
+.dayBox.done { background: #c9e5b5; }
+.dayBox.today { background: var(--mustard); }
+#adOverlay { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; padding: 16px; background: rgba(44, 42, 63, .88); }
+.adBox { width: min(340px, 100%); display: grid; gap: 10px; padding: 16px; text-align: center; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; }
+.adBox p { margin: 0; }
+.adTag { font-size: 15px; font-weight: 800; color: #5b5870; }
+.adCount { font-size: 56px; font-weight: 800; line-height: 1; }
 /* Yap menüsü ve yerleştirme çubuğu */
 .tools #buildBtn { width: auto; padding: 0 10px; font-size: 15px; }
 .tools #buildBtn.ready { background: var(--mustard); animation: nudge 1.6s ease-in-out infinite; }
@@ -162,7 +186,7 @@ body {
 .buildBtns { display: flex; gap: 8px; width: min(460px, 100%); }
 .buildBtns .menuBtn { flex: 1; min-height: 52px; font-size: 18px; padding: 4px 8px; }
 .buildBtns .menuBtn:disabled { background: #e7e1d3; color: #6f6b80; box-shadow: 0 2px 0 var(--ink); }
-body.building .tools, body.building #hint, body.building #shelfBtn, body.building #progress, body.building #rep { display: none !important; }
+body.building .tools, body.building #hint, body.building #shelfBtn, body.building #questBtn, body.building #progress, body.building #rep { display: none !important; }
 #hint {
   justify-self: center; max-width: 100%;
   font-size: 19px; text-align: center; background: var(--ink); color: var(--paper);
@@ -267,7 +291,7 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
   .menuBtn, .menuBtn.primary { min-height: 46px; font-size: 19px; }
   #pStyle .menuBtn { grid-column: 1 / -1; }
   .upList { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
-  #pUpgrade .menuBtn, #pOffline .menuBtn, #pBranches .menuBtn, #pBranch .menuBtn, #pBuild .menuBtn, .tabs { grid-column: 1 / -1; }
+  #pUpgrade .menuBtn, #pOffline .menuBtn, #pBranches .menuBtn, #pBranch .menuBtn, #pBuild .menuBtn, #pQuests .menuBtn, #pDaily .menuBtn, .tabs { grid-column: 1 / -1; }
 }
 #fail { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: var(--sky); font-size: 20px; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 </style>
@@ -287,6 +311,7 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
   </div>
   <div id="hint" class="sticker">Karpuz topla</div>
   <button id="shelfBtn" type="button" hidden></button>
+  <button id="questBtn" type="button" aria-label="Günlük görevler" hidden>Görevler</button>
 </div>
 <div id="menu">
   <div id="pMain" class="panel">
@@ -315,6 +340,7 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
         <li>Kasaya geç, müşterinin ödemesini al.</li>
         <li>Masadaki parayı topla.</li>
         <li>Fiyatlı karelere basıp yeni yer aç, çalışan tut.</li>
+        <li>Sağ alttaki Görevler'de her gün üç görev var; bitirince ödülünü al. Her gün oyuna girince hediye kazanırsın, art arda geldikçe büyür.</li>
         <li>Üstteki Yap ile raf ve üretim yeri al, istediğin yere koy. Yerleri düzenle ile sonradan taşıyıp döndürebilirsin.</li>
         <li>Müşteriyi bekletme: balonu kızarınca sabrı bitiyor. Kızıp giderse yıldızın düşer, yıldızın yüksekse bahşiş alırsın.</li>
         <li>Rafın veya dolabın önüne gelince çıkan düğmeyle kapasitesini 18 ürüne kadar büyüt.</li>
@@ -347,6 +373,7 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
   <div id="pUpgrade" class="panel" hidden>
     <div class="card"><h2>Geliştirmeler</h2><div id="upMoney" class="upMoney">₺0</div></div>
     <div id="upList" class="upList"></div>
+    <button id="btnBoost" class="menuBtn ad" type="button">▶ Reklam izle: 5 dakika çift kazanç</button>
     <button id="btnUpClose" class="menuBtn primary" type="button">Dükkâna dön</button>
   </div>
   <div id="pOffline" class="panel" hidden>
@@ -356,6 +383,7 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
       <div id="offAmount" class="offAmount">₺0</div>
       <div id="offNote" hidden></div>
     </div>
+    <button id="btnOffAd" class="menuBtn ad" type="button">▶ Reklam izle, 2 katını al</button>
     <button id="btnOffCollect" class="menuBtn primary" type="button">Topla</button>
   </div>
   <div id="pBuild" class="panel" hidden>
@@ -382,7 +410,23 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
       <div id="brCapNote" class="brNote"></div>
     </div>
     <div id="brUpList" class="upList"></div>
+    <button id="btnBrAd" class="menuBtn ad" type="button">▶ Reklam izle: kasayı hemen doldur</button>
     <button id="btnBrBack" class="menuBtn primary" type="button">Şubelere dön</button>
+  </div>
+  <div id="pQuests" class="panel" hidden>
+    <div class="card"><h2>Günlük görevler</h2><div id="qNote" class="brNote"></div></div>
+    <div id="qList" class="upList"></div>
+    <button id="btnQClose" class="menuBtn primary" type="button">Dükkâna dön</button>
+  </div>
+  <div id="pDaily" class="panel" hidden>
+    <div class="card">
+      <h2>Günlük hediye</h2>
+      <div id="dayText" class="brNote"></div>
+      <div id="dayGrid" class="dayGrid"></div>
+      <div id="dayAmount" class="offAmount">₺0</div>
+    </div>
+    <button id="btnDayAd" class="menuBtn ad" type="button">▶ Reklam izle, 2 katını al</button>
+    <button id="btnDayTake" class="menuBtn primary" type="button">Al</button>
   </div>
   <div id="pInstall" class="panel" hidden>
     <div class="card">
@@ -403,6 +447,15 @@ body.building .tools, body.building #hint, body.building #shelfBtn, body.buildin
     <button id="bRotate" class="menuBtn" type="button">Döndür</button>
     <button id="bCancel" class="menuBtn" type="button">Vazgeç</button>
     <button id="bOk" class="menuBtn primary" type="button">Tamam</button>
+  </div>
+</div>
+<div id="adOverlay" hidden>
+  <div class="adBox" role="dialog" aria-label="Reklam">
+    <div class="adTag">Deneme reklamı</div>
+    <div id="adCount" class="adCount">3</div>
+    <p class="brNote">Uygulama sürümünde burada gerçek bir reklam gösterilecek. Sonuna kadar izlenince ödül verilir.</p>
+    <button id="adClaim" class="menuBtn primary" type="button" disabled>Ödülü al</button>
+    <button id="adSkip" class="menuBtn" type="button">Vazgeç</button>
   </div>
 </div>
 <div id="rep" class="sticker" aria-label="Müşteri memnuniyeti" hidden>★★★★☆</div>
@@ -1587,7 +1640,7 @@ function tryDeposit(e) {
       const it = e.stack.splice(i, 1)[0];
       it.t.copy(sh.slots[sh.items.length]); it.k = 12; it.mesh.rotation.y = 0;
       sh.items.push(it); e.depositT = 0.09;
-      if (e === player) { markHint('stock:' + it.type); markHint('full'); }
+      if (e === player) { markHint('stock:' + it.type); markHint('full'); questEvent('stock', 1); }
       if (e === player) sfx(520, 0.05);
       return;
     }
@@ -1787,6 +1840,7 @@ function updateRegister(reg, dt) {
     head.belt = head.stack.splice(0);
     head.total = head.belt.reduce((sum, it) => sum + price(it.type), 0);
     if (S.rep >= 80) head.total = Math.round(head.total * 1.15); /* memnun müşteri bahşiş bırakır */
+    head.total *= boostMult(); /* reklamla açılan çift kazanç */
     const gap = Math.min(0.42, 1.2 / head.belt.length);
     head.belt.forEach((it, i) => { it.t.set(dx + 3.4 + i * gap, 1.18 + HEIGHT[it.type] / 2, 4.22); it.k = 9; it.arc = 0.3; });
     till.setDisplay('₺' + head.total);
@@ -1806,6 +1860,7 @@ function updateRegister(reg, dt) {
   head.stack.push(spawnItem('poset', V(dx + 4.9, 1.3, 4.6)));
   addToPile(head.total, V(dx + 6.15, 1.4, 3.7));
   S.earned += head.total;
+  questEvent('sell', 1); questEvent('earn', head.total);
   head.state = 'out'; head.heartT = 1.2; head.exitX = rnd(3, 9); head.mood = 'kalp';
   markHint('register');
   head.bubble.material.color.set(0xffffff);
@@ -1854,7 +1909,7 @@ $('shelfBtn').addEventListener('pointerdown', e => {
   if (!shelfHere) return;
   const cost = shelfNext(shelfHere);
   if (S.money < cost) { sfx(190, 0.14); return; }
-  S.money -= cost; S.shelves[shelfHere.type] = shelfHere.cap + 3;
+  S.money -= cost; S.shelves[shelfHere.type] = shelfHere.cap + 3; questEvent('shelf', 1);
   setShelfCap(shelfHere, shelfHere.cap + 3);
   shelfLabel = ''; sfx(880, 0.09); sfx(1320, 0.12, 0.08); save();
 });
@@ -1862,6 +1917,7 @@ $('shelfBtn').addEventListener('pointerdown', e => {
 /* ---------- Açılacak yerler ---------- */
 const S = {
   money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false, rep: 70, owned: {}, hints: {}, shelves: {}, br: {},
+  daily: { day: '', tasks: [], streak: 0, claim: '' }, adCool: {}, boostUntil: 0,
   style: { floor: 'nane', wall: '#f7e7c6', awning: '#e4472f', uniform: '#1f8a70', name: 'KÖŞE BAKKAL' },
 };
 const PADS = [
@@ -2024,7 +2080,7 @@ function buyUpgrade(id) {
   if (!u || !upReady(u) || lv(id) >= u.max) return false;
   const c = upCost(u);
   if (S.money < c) return false;
-  S.money -= c; LV[id] = lv(id) + 1;
+  S.money -= c; LV[id] = lv(id) + 1; questEvent('upgrade', 1);
   applyUpgrade(id, 1);
   sfx(880, 0.09); sfx(1320, 0.12, 0.08);
   save();
@@ -2054,6 +2110,7 @@ function renderUpgrades() {
     }
     row.append(info, b); root.append(row);
   });
+  syncBoostBtn();
 }
 
 /* ---------- Çevrimdışı kazanç: kasiyer varsa dükkân sen yokken de satar ---------- */
@@ -2065,7 +2122,7 @@ function offlineEarnings(ms) {
   const eff = helpers.length ? 0.5 : 0.25;
   return Math.floor(S.rate * Math.min(sec, capSec) * eff);
 }
-let loadAway = 0, offBranch = false;
+let loadAway = 0, offBranch = false, offShown = 0, offExtra = 0;
 /* away: oyuncunun ne kadar uzak kaldığı (ms); bir dakikadan kısa aralarda şube kasası ayrıca gösterilmez */
 function offerOffline(amount, away) {
   const brT = away >= 60000 ? Math.floor(brTillTotal()) : 0;
@@ -2074,6 +2131,8 @@ function offerOffline(amount, away) {
   $('offAmount').textContent = fmt(amount + brT);
   $('offNote').hidden = !offBranch;
   $('offNote').textContent = `Dükkân ${fmt(amount)} · Şubeler ${fmt(brT)}`;
+  offShown = Math.floor(amount + brT); offExtra = 0;
+  $('btnOffAd').hidden = offShown < 20; /* küçük tutarlar için reklam önerilmez */
   showPanel('pOffline');
   return true;
 }
@@ -2113,6 +2172,7 @@ function brCollect(b) {
   brAccrue(b, Date.now());
   const x = Math.floor(st.till); if (x < 1) return 0;
   st.till -= x; S.money += x; S.earned += x; rateE += x; /* kazanç hızı ortalamasını şişirmesin */
+  questEvent('branch', 1);
   return x;
 }
 const brCollectAll = () => BRANCHES.reduce((s, b) => s + brCollect(b), 0);
@@ -2234,10 +2294,22 @@ function refreshBranch() {
   $('brMoney').textContent = fmt(S.money);
   const h = 1 + lv('mesai');
   $('brCapNote').textContent = `Kasa ${h} saatte dolar, sonra durur. Gece vardiyası bu süreyi uzatır.`;
+  /* Reklamla kasa hemen dolar; her şube için yarım saatte bir */
+  const ad = $('btnBrAd'), wait = adLeft('br:' + b.id), full = S.br[b.id].till >= brCap(b) - 0.5;
+  ad.disabled = wait > 0 || full;
+  ad.textContent = wait > 0 ? `▶ Kasa doldurma ${fmtClock(wait)} sonra` : full ? 'Kasa zaten dolu' : `▶ Reklam izle: kasayı doldur (+${fmt(brCap(b) - S.br[b.id].till)})`;
 }
+$('btnBrAd').addEventListener('click', async () => {
+  const b = brCur; if (!b || adLeft('br:' + b.id) > 0) return;
+  if (!(await showRewardedAd())) return;
+  brAccrue(b, Date.now()); S.br[b.id].till = brCap(b); S.adCool['br:' + b.id] = Date.now() + 30 * 60000;
+  rewardSfx(); save(); refreshBranch();
+});
 setInterval(() => {
   if (!$('pBranches').hidden) refreshBranches();
   if (!$('pBranch').hidden && brCur) refreshBranch();
+  if (!$('pUpgrade').hidden) syncBoostBtn();
+  if (S.daily.day && S.daily.day !== dayKey()) { rollDay(); if (!$('pQuests').hidden) renderQuests(); } /* gece yarısı yeni görevler */
 }, 1000);
 
 /* ---------- Yap menüsü: sekmelerden raf ve üretim yeri alınır, dükkâna istenen yere konur ---------- */
@@ -2399,7 +2471,7 @@ function confirmPlace() {
   if (it) {
     if (S.money < it.cost) { $('buildMsg').textContent = 'Para yetmiyor'; $('buildMsg').classList.add('bad'); sfx(190, 0.14); return; }
     S.money -= it.cost; S.unlocked[it.id] = true;
-    p.o.group.visible = false; applyUnlock(it.id, true);
+    p.o.group.visible = false; applyUnlock(it.id, true); questEvent('buy', 1);
     confetti(V(p.x, 1, p.z)); sfx(660, 0.1); sfx(880, 0.1, 0.09); sfx(1320, 0.16, 0.18);
     toast(it.name + ' açıldı!', 1500);
   } else sfx(880, 0.08);
@@ -2463,6 +2535,141 @@ function buildUp(e) {
   }
 }
 
+/* ---------- Ödüllü reklam: web sürümünde deneme ekranı açılır; uygulama sürümünde gerçek reklam (AdMob) yalnızca showRewardedAd'e bağlanır ---------- */
+const AD_TEST_SEC = 3;
+let adResolve = null, adTimer = 0;
+function showRewardedAd() {
+  if (adResolve) return Promise.resolve(false);
+  return new Promise(res => {
+    adResolve = res;
+    /* Süre saate göre sayılır: sekme arka plana düşüp zamanlayıcı yavaşlasa da uzamaz */
+    const end = Date.now() + AD_TEST_SEC * 1000, claim = $('adClaim');
+    claim.disabled = true; $('adCount').textContent = AD_TEST_SEC;
+    $('adOverlay').hidden = false;
+    clearInterval(adTimer);
+    adTimer = setInterval(() => {
+      const n = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      $('adCount').textContent = n;
+      if (!n) { clearInterval(adTimer); claim.disabled = false; claim.focus(); }
+    }, 200);
+  });
+}
+function endAd(ok) {
+  clearInterval(adTimer); $('adOverlay').hidden = true;
+  const r = adResolve; adResolve = null; if (r) r(ok);
+}
+$('adClaim').addEventListener('click', () => endAd(true));
+$('adSkip').addEventListener('click', () => endAd(false));
+const adLeft = key => Math.max(0, (S.adCool[key] || 0) - Date.now());
+const fmtClock = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function rewardSfx() { sfx(990, 0.08); sfx(1240, 0.08, 0.06); sfx(1480, 0.1, 0.12); }
+/* Ödül parası kazanç sayılır ama kazanç hızı ortalamasını şişirmez */
+function giveMoney(x) { S.money += x; S.earned += x; rateE += x; }
+
+/* Çift kazanç: reklam başına 5 dakika, en fazla 30 dakika birikir; dükkân satışlarına uygulanır */
+const BOOST_MIN = 5, BOOST_MAX_MIN = 30;
+const boostLeft = () => Math.max(0, (S.boostUntil || 0) - Date.now());
+const boostMult = () => (boostLeft() > 0 ? 2 : 1);
+function syncBoostBtn() {
+  const b = $('btnBoost'), left = boostLeft();
+  b.disabled = left > (BOOST_MAX_MIN - BOOST_MIN) * 60000;
+  b.textContent = left > 0 ? `▶ +5 dakika ekle · ×2 kalan ${fmtClock(left)}` : '▶ Reklam izle: 5 dakika çift kazanç';
+}
+$('btnBoost').addEventListener('click', async () => {
+  if (!(await showRewardedAd())) return;
+  S.boostUntil = Math.max(Date.now(), S.boostUntil || 0) + BOOST_MIN * 60000;
+  rewardSfx(); save(); syncBoostBtn(); updateHud();
+});
+
+/* ---------- Günlük görevler: her gün üç görev, ödülü reklamla iki katına çıkar ---------- */
+const dayKey = t => { const d = new Date(t === undefined ? Date.now() : t); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+const QUESTS = {
+  sell: { text: n => `${n} müşteriye satış yap`, target: l => [12, 25, 40][l] },
+  earn: { text: n => `Satışlardan ${fmt(n)} kazan`, money: true, target: () => Math.max(200, Math.round((S.rate || 0.5) * 900 / 50) * 50) },
+  stock: { text: n => `Raflara ${n} ürün diz`, target: l => [20, 40, 60][l] },
+  upgrade: { text: n => `${n} geliştirme al`, target: () => 2, ok: () => S.earned >= 150 },
+  buy: { text: () => 'Yeni bir yer aç: kare ya da Yap menüsü', target: () => 1, ok: () => PADS.some(p => !S.unlocked[p.id]) },
+  branch: { text: n => `Şube kasasını ${n} kez topla`, target: () => 2, ok: () => Object.keys(S.br).length > 0 },
+  shelf: { text: () => 'Bir rafı ya da dolabı genişlet', target: () => 1, ok: () => openShelves().some(s => s.cap < 18) },
+};
+function rollDay() {
+  const today = dayKey();
+  if (S.daily.day === today) return false;
+  const l = S.earned < 2000 ? 0 : S.earned < 20000 ? 1 : 2;
+  const base = Math.max(100, Math.round((S.rate || 0) * 300 / 10) * 10);
+  const others = Object.keys(QUESTS).filter(k => k !== 'sell' && (!QUESTS[k].ok || QUESTS[k].ok())).sort(() => Math.random() - 0.5).slice(0, 2);
+  S.daily.day = today;
+  S.daily.tasks = ['sell'].concat(others).map((k, i) => ({ k, target: QUESTS[k].target(l), prog: 0, claimed: false, reward: Math.round(base * (1 + i * 0.5) / 10) * 10 }));
+  return true;
+}
+function questEvent(k, n) {
+  (S.daily.tasks || []).forEach(t => {
+    if (t.k !== k || t.claimed || t.prog >= t.target) return;
+    t.prog = Math.min(t.target, t.prog + n);
+    if (t.prog >= t.target) { toast('Görev tamam! Görevler\'den ödülünü al', 2200); sfx(780, 0.08); sfx(1170, 0.12, 0.08); }
+  });
+}
+const questClaimable = () => (S.daily.tasks || []).some(t => !t.claimed && t.prog >= t.target);
+function claimQuest(t, mult) {
+  if (t.claimed || t.prog < t.target) return;
+  t.claimed = true; giveMoney(t.reward * mult);
+  rewardSfx(); popMoney(); updateHud(); save(); renderQuests();
+}
+function renderQuests() {
+  rollDay();
+  $('qNote').textContent = 'Görevler her gün yenilenir. Ödülü reklamla iki katına çıkarabilirsin.';
+  const root = $('qList'); root.textContent = '';
+  S.daily.tasks.forEach(t => {
+    const q = QUESTS[t.k], done = t.prog >= t.target;
+    const row = document.createElement('div'); row.className = 'upRow';
+    const info = document.createElement('div'), title = document.createElement('b'), note = document.createElement('small');
+    title.textContent = q.text(t.target);
+    note.textContent = t.claimed ? 'Ödül alındı' : (q.money ? `${fmt(t.prog)} / ${fmt(t.target)}` : `${Math.floor(t.prog)} / ${t.target}`) + ` · Ödül ${fmt(t.reward)}`;
+    const bar = document.createElement('div'); bar.className = 'brBar'; const fill = document.createElement('i');
+    fill.style.width = Math.min(100, t.prog / t.target * 100) + '%'; bar.append(fill);
+    info.append(title, note, bar);
+    if (t.claimed) { const b = brButton('Alındı', 'max'); b.disabled = true; row.append(info, b); }
+    else if (done) {
+      const btns = document.createElement('div'); btns.className = 'brBtns';
+      const take = brButton('Al ' + fmt(t.reward)), dbl = brButton('▶ ×2', 'ghost');
+      dbl.setAttribute('aria-label', 'Reklam izle, ödülü iki katına çıkar');
+      take.addEventListener('click', () => claimQuest(t, 1));
+      dbl.addEventListener('click', async () => { if (await showRewardedAd()) claimQuest(t, 2); });
+      btns.append(take, dbl); row.append(info, btns);
+    } else { const b = brButton('Devam', 'locked'); b.disabled = true; row.append(info, b); }
+    root.append(row);
+  });
+}
+$('questBtn').addEventListener('click', () => { if (gameState !== 'play') return; pause(); renderQuests(); showPanel('pQuests'); });
+$('btnQClose').addEventListener('click', play);
+
+/* ---------- Günlük hediye: art arda gelinen her gün büyür, 7. gün en büyüğü; bir gün kaçarsa baştan başlar ---------- */
+const DAY_MULT = [1, 1.5, 2, 2.5, 3, 4, 6];
+const dailyDue = () => S.earned > 0 && S.daily.claim !== dayKey();
+const nextStreak = () => (S.daily.claim === dayKey(Date.now() - 864e5) ? (S.daily.streak % 7) + 1 : 1);
+const dayBase = () => Math.max(150, Math.round((S.rate || 0) * 360 / 10) * 10);
+const dayGiftOf = n => Math.round(dayBase() * DAY_MULT[n - 1] / 10) * 10;
+function renderDaily() {
+  const n = nextStreak(), grid = $('dayGrid'); grid.textContent = '';
+  DAY_MULT.forEach((m, i) => {
+    const box = document.createElement('div'); box.className = 'dayBox' + (i < n - 1 ? ' done' : i === n - 1 ? ' today' : '');
+    const b = document.createElement('b'); b.textContent = (i + 1) + '. gün';
+    box.append(b, document.createTextNode(i < n - 1 ? '✓' : fmt(dayGiftOf(i + 1))));
+    grid.append(box);
+  });
+  $('dayText').textContent = n === 1 ? 'Her gün gel, hediyen büyüsün. 7. gün en büyüğü!' : `${n}. gün üst üste geldin, hediyen büyüdü!`;
+  $('dayAmount').textContent = fmt(dayGiftOf(n));
+}
+function claimDaily(mult) {
+  if (!dailyDue()) { play(); return; }
+  const n = nextStreak();
+  giveMoney(dayGiftOf(n) * mult);
+  S.daily.streak = n; S.daily.claim = dayKey();
+  rewardSfx(); save(); syncMainMenu(); play(); popMoney();
+}
+$('btnDayTake').addEventListener('click', () => claimDaily(1));
+$('btnDayAd').addEventListener('click', async () => { if (await showRewardedAd()) claimDaily(2); });
+
 const padGeo = new THREE.PlaneGeometry(2.8, 2.8);
 PADS.forEach(p => {
   const g = new THREE.Group(); g.position.set(p.x, 0.07, p.z); g.rotation.x = -Math.PI / 2; g.visible = false; scene.add(g);
@@ -2512,7 +2719,7 @@ function updatePads(dt) {
       }
       if (p.paid >= p.cost - 0.001) {
         S.unlocked[p.id] = true; p.group.visible = false;
-        applyUnlock(p.id, true); confetti(V(p.x, 1, p.z)); sfx(660, 0.1); sfx(880, 0.1, 0.09); sfx(1320, 0.16, 0.18);
+        applyUnlock(p.id, true); questEvent('buy', 1); confetti(V(p.x, 1, p.z)); sfx(660, 0.1); sfx(880, 0.1, 0.09); sfx(1320, 0.16, 0.18);
         toast(p.name + ' açıldı!', 1500);
         save();
       }
@@ -2692,7 +2899,11 @@ function toast(text, ms) {
 let lastMoney = -1, lastBag = '', lastStaff = '', lastRep = '';
 function updateHud() {
   const m = Math.floor(S.money);
-  if (m !== lastMoney) { lastMoney = m; $('money').textContent = '₺' + m.toLocaleString('tr-TR'); }
+  const boostOn = boostLeft() > 0, mk = m + (boostOn ? 'x' : '');
+  if (mk !== lastMoney) { lastMoney = mk; $('money').textContent = '₺' + m.toLocaleString('tr-TR') + (boostOn ? ' ×2' : ''); }
+  const qb = $('questBtn');
+  if (qb.hidden !== S.earned < 50) qb.hidden = S.earned < 50;
+  if (!qb.hidden) qb.classList.toggle('ready', questClaimable());
   const bag = player.stack.length + '/' + player.cap;
   if (bag !== lastBag) { lastBag = bag; $('bag').textContent = 'Sepet ' + bag; $('bag').classList.toggle('full', player.stack.length >= player.cap); }
   const stars = Math.max(1, Math.round(S.rep / 20));
@@ -2717,7 +2928,7 @@ function updateHud() {
 
 /* ---------- Menüler ---------- */
 let gameState = 'menu';
-const PANELS = ['pMain', 'pPause', 'pHow', 'pSettings', 'pInstall', 'pStyle', 'pUpgrade', 'pOffline', 'pBranches', 'pBranch', 'pBuild'];
+const PANELS = ['pMain', 'pPause', 'pHow', 'pSettings', 'pInstall', 'pStyle', 'pUpgrade', 'pOffline', 'pBranches', 'pBranch', 'pBuild', 'pQuests', 'pDaily'];
 function showPanel(id) {
   PANELS.forEach(p => { $(p).hidden = p !== id; });
   $('menu').scrollTop = 0;
@@ -2818,6 +3029,11 @@ function setPlaying(on) {
 }
 let guardRefund = 0;
 function play() {
+  /* Günün ilk oyununda önce günlük hediye gösterilir */
+  if (dailyDue() && !adResolve) {
+    if (gameState !== 'menu') gameState = 'pause';
+    rollDay(); renderDaily(); showPanel('pDaily'); setPlaying(false); return;
+  }
   gameState = 'play'; camK = 2.5; setPlaying(true); updateHud(); lastT = performance.now();
   if (guardRefund > 0) { toast(`Hırsız artık yok, güvenliğin ₺${guardRefund.toLocaleString('tr-TR')} iade edildi`, 3200); guardRefund = 0; popMoney(); save(); }
 }
@@ -2841,10 +3057,17 @@ $('btnBrAll').addEventListener('click', () => {
 });
 $('btnOffCollect').addEventListener('click', () => {
   if (offBranch) { brCollectAll(); offBranch = false; }
-  S.money += offlinePending; S.earned += offlinePending; rateE += offlinePending; offlinePending = 0;
-  sfx(990, 0.08); sfx(1240, 0.08, 0.06); sfx(1480, 0.1, 0.12);
+  giveMoney(offlinePending + offExtra); offlinePending = offExtra = 0;
+  rewardSfx();
   save(); syncMainMenu(); updateHud(); popMoney();
   showPanel(gameState === 'menu' ? 'pMain' : 'pPause');
+});
+/* Reklamla sen yokken kazanılanın bir katı daha eklenir */
+$('btnOffAd').addEventListener('click', async () => {
+  if (!(await showRewardedAd())) return;
+  offExtra = offShown; $('btnOffAd').hidden = true;
+  $('offAmount').textContent = fmt(offShown * 2); $('offNote').textContent = 'Reklam sayesinde 2 katı!'; $('offNote').hidden = false;
+  rewardSfx();
 });
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => showPanel(b.dataset.go)));
 document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => showPanel(gameState === 'menu' ? 'pMain' : 'pPause')));
@@ -2874,7 +3097,7 @@ const SAVE_KEY = 'kose-bakkal-v1';
 let noSave = false;
 function save() {
   if (noSave) return;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, hints: S.hints, shelves: S.shelves, br: S.br, layout: layoutSave(), lv: LV, rate: S.rate, lastSeen: Date.now(), refundNote: guardRefund, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, hints: S.hints, shelves: S.shelves, br: S.br, layout: layoutSave(), daily: S.daily, adCool: S.adCool, boostUntil: S.boostUntil, lv: LV, rate: S.rate, lastSeen: Date.now(), refundNote: guardRefund, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
 }
 /* Yalnızca yeri değişen nesneler saklanır; taşıma yarıda kaldıysa eski yeri yazılır */
 function layoutSave() {
@@ -2948,6 +3171,20 @@ function load() {
     if (Number.isFinite(v.t) && v.t <= Date.now()) st.t = v.t;
     S.br[b.id] = st; st.till = Math.min(clampNum(v.till, 1e9), brCap(b));
   });
+  /* Günlük görevler ve hediye: bilinen görev türleri, makul sayılar */
+  const dl = asRecord(d.daily), isDay = v => typeof v === 'string' && /^\d{4}-\d{1,2}-\d{1,2}$/.test(v);
+  if (isDay(dl.day) && Array.isArray(dl.tasks)) {
+    S.daily.day = dl.day;
+    S.daily.tasks = dl.tasks.filter(t => t && QUESTS[t.k]).slice(0, 3).map(t => ({
+      k: t.k, target: Math.max(1, Math.floor(clampNum(t.target, 1e7))), prog: clampNum(t.prog, 1e7), claimed: t.claimed === true, reward: Math.floor(clampNum(t.reward, 1e6)),
+    }));
+  }
+  if (isDay(dl.claim)) S.daily.claim = dl.claim;
+  S.daily.streak = Math.floor(clampNum(dl.streak, 7));
+  /* Reklam bekleme süreleri ve çift kazanç ileriye en fazla izin verilen kadar uzanabilir */
+  const ac = asRecord(d.adCool);
+  Object.keys(ac).forEach(k => { if (/^br:[a-z]+$/.test(k) && Number.isFinite(ac[k])) S.adCool[k] = Math.min(ac[k], Date.now() + 30 * 60000); });
+  if (Number.isFinite(d.boostUntil)) S.boostUntil = Math.min(d.boostUntil, Date.now() + BOOST_MAX_MIN * 60000);
   S.rate = clampNum(d.rate, 1e5);
   /* Hırsız oyundan çıkarıldı: kapı güvenliğine ödenen para bir kez geri verilir */
   const fromGuard = unlocked.guvenlik === true ? 4000 : Math.floor(clampNum(paid.guvenlik, 4000));
@@ -2968,6 +3205,7 @@ document.addEventListener('visibilitychange', () => {
 openSource('karpuz', false);
 openShelf('karpuz', false);
 load();
+rollDay();
 applyStyle();
 $('shopName').value = S.style.name;
 applyQuality();
@@ -3083,6 +3321,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 /* Test kancası yalnızca yerel geliştirmede açılır */
-if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, registers, PADS, helpers, step, get accountant() { return accountant; }, LV, UPS, buyUpgrade, price, offlineEarnings, PLACE, placeAt, startPlace, startArrange, checkPlace, build, footOf, camera, canvas };
+if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, registers, PADS, helpers, step, get accountant() { return accountant; }, LV, UPS, buyUpgrade, price, offlineEarnings, PLACE, placeAt, startPlace, startArrange, checkPlace, build, footOf, camera, canvas, rollDay, dayKey, play };
 })();
 </script>
