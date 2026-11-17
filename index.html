@@ -139,6 +139,29 @@ body {
 .brBar.full i { background: var(--tomato); }
 .brBtns { display: grid; gap: 6px; }
 .upBuy.ghost { background: var(--paper); }
+/* Yap menüsü ve yerleştirme çubuğu */
+.tools #buildBtn { width: auto; padding: 0 10px; font-size: 15px; }
+.tools #buildBtn.ready { background: var(--mustard); animation: nudge 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .tools #buildBtn.ready { animation: none; } }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tabs button {
+  min-height: 46px; cursor: pointer; touch-action: manipulation; font: 800 19px var(--font); color: var(--ink);
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink);
+}
+.tabs button.on { background: var(--mustard); }
+.tabs button:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
+#buildBar {
+  position: fixed; left: 0; right: 0; z-index: 4; display: grid; justify-items: center; gap: 8px; pointer-events: none;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+#buildBar > * { pointer-events: auto; }
+#buildMsg { font-size: 16px; line-height: 1.3; text-align: center; max-width: min(460px, 100%); text-wrap: balance; }
+#buildMsg.bad { background: var(--tomato); color: var(--paper); }
+.buildBtns { display: flex; gap: 8px; width: min(460px, 100%); }
+.buildBtns .menuBtn { flex: 1; min-height: 52px; font-size: 18px; padding: 4px 8px; }
+.buildBtns .menuBtn:disabled { background: #e7e1d3; color: #6f6b80; box-shadow: 0 2px 0 var(--ink); }
+body.building .tools, body.building #hint, body.building #shelfBtn, body.building #progress, body.building #rep { display: none !important; }
 #hint {
   justify-self: center; max-width: 100%;
   font-size: 19px; text-align: center; background: var(--ink); color: var(--paper);
@@ -241,7 +264,7 @@ body {
   .menuBtn, .menuBtn.primary { min-height: 46px; font-size: 19px; }
   #pStyle .menuBtn { grid-column: 1 / -1; }
   .upList { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
-  #pUpgrade .menuBtn, #pOffline .menuBtn, #pBranches .menuBtn, #pBranch .menuBtn { grid-column: 1 / -1; }
+  #pUpgrade .menuBtn, #pOffline .menuBtn, #pBranches .menuBtn, #pBranch .menuBtn, #pBuild .menuBtn, .tabs { grid-column: 1 / -1; }
 }
 #fail { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: var(--sky); font-size: 20px; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 </style>
@@ -255,6 +278,7 @@ body {
   </div>
   <div class="tools">
     <button id="styleBtn" type="button" aria-label="Dükkânı özelleştir">Boya</button>
+    <button id="buildBtn" type="button" aria-label="Yap ve yerleştir">Yap</button>
     <button id="brBtn" type="button" aria-label="Şubeler" hidden>Şube</button>
     <button id="upBtn" type="button" aria-label="Geliştirmeler" hidden>↑</button>
     <button id="pauseBtn" type="button" aria-label="Oyunu duraklat">II</button>
@@ -289,6 +313,7 @@ body {
         <li>Kasaya geç, müşterinin ödemesini al.</li>
         <li>Masadaki parayı topla.</li>
         <li>Fiyatlı karelere basıp yeni yer aç, çalışan tut.</li>
+        <li>Üstteki Yap ile raf ve üretim yeri al, istediğin yere koy. Yerleri düzenle ile sonradan taşıyıp döndürebilirsin.</li>
         <li>Müşteriyi bekletme: balonu kızarınca sabrı bitiyor. Kızıp giderse yıldızın düşer, yıldızın yüksekse bahşiş alırsın.</li>
         <li>Rafın veya dolabın önüne gelince çıkan düğmeyle kapasitesini 18 ürüne kadar büyüt.</li>
         <li>Üstteki ↑ düğmesiyle geliştirme al: zam yap, hasadı hızlandır, daha çok müşteri çek.</li>
@@ -330,6 +355,16 @@ body {
     </div>
     <button id="btnOffCollect" class="menuBtn primary" type="button">Topla</button>
   </div>
+  <div id="pBuild" class="panel" hidden>
+    <div class="card"><h2>Yap ve yerleştir</h2><div id="buildMoney" class="upMoney">₺0</div></div>
+    <div id="buildTabs" class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="shelf">Raflar</button>
+      <button type="button" role="tab" data-tab="src">Üretim</button>
+    </div>
+    <div id="buildList" class="upList"></div>
+    <button id="btnArrange" class="menuBtn" type="button">Yerleri düzenle</button>
+    <button id="btnBuildClose" class="menuBtn primary" type="button">Dükkâna dön</button>
+  </div>
   <div id="pBranches" class="panel" hidden>
     <div class="card"><h2>Şubelerin</h2><div id="brSum" class="brSum">₺0/saat</div><div id="brMoneyAll" class="upMoney">₺0</div></div>
     <div id="brList" class="upList"></div>
@@ -357,6 +392,14 @@ body {
       </ol>
     </div>
     <button class="menuBtn primary" type="button" data-back>Tamam</button>
+  </div>
+</div>
+<div id="buildBar" hidden>
+  <div id="buildMsg" class="sticker" aria-live="polite"></div>
+  <div class="buildBtns">
+    <button id="bRotate" class="menuBtn" type="button">Döndür</button>
+    <button id="bCancel" class="menuBtn" type="button">Vazgeç</button>
+    <button id="bOk" class="menuBtn primary" type="button">Tamam</button>
   </div>
 </div>
 <div id="rep" class="sticker" aria-label="Müşteri memnuniyeti" hidden>★★★★☆</div>
@@ -751,120 +794,151 @@ function moveTo(e, target, speed, dt) {
   e.moving = true;
   return false;
 }
-/* İkinci sıra reyonun içinden geçmemek için koridorları kullanır */
-const AISLES = [-2.6, 5.4], ROW_Z0 = -0.1, ROW_Z1 = 2.1, DOOR_X = 0.3, BACK_AISLES = [-9.25, 8.35], SALON_LANES = [-8.8, 8.8], FIELD_LANE = 2.35;
-function routed(e, target, speed, dt) {
-  /* Toptancıya dükkân kapısından çıkılır, depoların arasından geçilir */
-  const toDepot = target.z > 18, lane = Math.abs(e.pos.x - DOOR_X) < 0.3;
-  const inDepot = e.pos.z > 19.2 || (e.pos.z > 18.2 && Math.abs(e.pos.x - DOOR_X) > 1.3);
-  if (toDepot && !inDepot) {
-    if (e.pos.z < 7.3) routed(e, V(DOOR_X, 0, 7.5), speed, dt);
-    else moveTo(e, V(DOOR_X, 0, 19.4), speed, dt);
-    return false;
-  }
-  if (toDepot && Math.abs(e.pos.x - target.x) > 0.5) { moveTo(e, V(target.x, 0, 19.4), speed, dt); return false; }
-  if (!toDepot && inDepot) { moveTo(e, V(DOOR_X, 0, lane ? 18 : 19.4), speed, dt); return false; }
-  if (!toDepot && lane && e.pos.z > 7.7 && target.z < 7.4) { moveTo(e, V(DOOR_X, 0, 7.5), speed, dt); return false; }
-  /* Salondan gelen ön reyonun arkasından çıkıp önüne geçer */
-  if (e.pos.z > -5.2 && e.pos.z < -2.9 && target.z > -2.9) { moveTo(e, V(e.pos.x, 0, -2.7), speed, dt); return false; }
-  if (e.pos.z > -5.2 && fieldLane(e, target, speed, dt)) return false;
-  /* Arka salona ön reyonun iki yanından geçilir */
-  const inBack = e.pos.z < -5.2, toBack = target.z < -5.2;
-  if (inBack !== toBack) {
-    const gx = nearLane(SALON_LANES, e, target);
-    const near = Math.abs(e.pos.x - gx) < 0.3 && e.pos.z > -7 && e.pos.z < -2.5;
-    if (near) moveTo(e, V(gx, 0, inBack ? -2.7 : -6.7), speed, dt);
-    else routed(e, V(gx, 0, inBack ? -6.7 : -2.7), speed, dt);
-    return false;
-  }
-  if (inBack && crossBack(e, target, speed, dt)) return false;
-  return routeFloor(e, target, speed, dt);
+/* ---------- Yol bulma: dünya 0,25'lik ızgaraya bölünür, katı kutular engel olur, yol A* ile bulunur ---------- */
+const NAV = { x0: -31.5, z0: -15.5, cs: 0.25, R: 0.3 };
+NAV.w = Math.ceil((47.5 - NAV.x0) / NAV.cs); NAV.h = Math.ceil((22 - NAV.z0) / NAV.cs);
+const NAV_N = NAV.w * NAV.h;
+const navGrid = new Uint8Array(NAV_N);
+let navDirty = true, navVer = 0, pathBudget = 0;
+function navInBounds(x, z) {
+  if (x < -31 || x > (yardOpen ? 46.5 : 30) || z > (depotOpen ? 21 : 14.4)) return false;
+  return z >= -4.6 || (annexOpen && Math.abs(x) < 10.05 && z >= -14.8);
 }
-/* Çitli tarlalar: karpuz ve domatese açık doğu kenarından, elma ve simide aradaki yoldan gidilir */
-function fieldLane(e, target, speed, dt) {
-  const zoneOf = p => (p.x < -21.3 ? 'w' : p.x > -11.4 ? 'e' : p.z < 0.8 ? 'k' : p.z > 2.8 ? 'd' : 'c');
-  const from = zoneOf(e.pos), to = zoneOf(target);
-  if (from === to) return false;
-  const A = V(-11, 0, FIELD_LANE), B = V(-21.6, 0, FIELD_LANE);
-  /* Yola bir kez girildi mi yolun öbür ucuna kadar yürünür */
-  const onLane = Math.abs(e.pos.z - FIELD_LANE) < 0.15 && e.pos.x < -10.8 && e.pos.x > -21.8;
-  const gate = (zone, z) => V(-11.3, 0, zone === 'k' ? Math.min(0.2, Math.max(-4.4, z)) : Math.min(8.2, Math.max(3.4, z)));
-  let p = null;
-  if (to === 'w') p = from === 'e' && !onLane ? A : B;
-  else if (from === 'w') p = onLane ? A : B;
-  else if (from === 'c') p = A;
-  else if (to === 'k' || to === 'd') { if (e.pos.x > -11.1) p = gate(to, target.z); }
-  else if ((from === 'k' || from === 'd') && e.pos.x < -11.5) p = gate(from, e.pos.z);
-  if (!p) return false;
-  /* Dükkân tarafından tarlaya giderken reyon ve tezgâhlar yine dolaşılır */
-  if (from === 'e') routeFloor(e, p, speed, dt); else moveTo(e, p, speed, dt);
-  return true;
-}
-/* Gidiş ile varışa toplamda en yakın geçit seçilir */
-function nearLane(lanes, e, target) {
-  const cost = x => Math.abs(e.pos.x - x) + Math.abs(target.x - x);
-  return lanes.reduce((a, b) => (cost(b) < cost(a) ? b : a));
-}
-/* Arka salondaki iki sıra arasında yan koridorlar kullanılır */
-function crossBack(e, target, speed, dt) {
-  const zone = z => (z > -7.7 ? 1 : z < -10.1 ? -1 : 0);
-  const from = zone(e.pos.z), to = zone(target.z);
-  if (from === to || !to) return false;
-  const gx = nearLane(BACK_AISLES, e, target);
-  if (from && Math.abs(e.pos.x - gx) > 0.2) moveTo(e, V(gx, 0, e.pos.z), speed, dt);
-  else moveTo(e, V(from ? gx : e.pos.x, 0, to > 0 ? -7.4 : -10.4), speed, dt);
-  return true;
-}
-function routeFloor(e, target, speed, dt) {
-  const z = e.pos.z, inRow = z > ROW_Z0 && z < ROW_Z1;
-  /* Kasaların önünden reyonlara iki tezgâh arasındaki boşluktan geçilir */
-  const gapX = Math.max(-3.9, Math.min(2.2, e.pos.x));
-  if (target.z < 3.1 && e.pos.x > -9.1 && (z > 5.1 || (z > 3.05 && e.pos.x > -4.3 && e.pos.x < 2.6))) {
-    moveTo(e, V(gapX, 0, Math.abs(e.pos.x - gapX) < 0.2 ? 2.9 : z), speed, dt);
-    return false;
+/* Engeller yürüyenin yarıçapı kadar şişirilir: hücre merkezi açıksa oradan geçilebilir */
+function fillNav(grid, rects) {
+  const { w, h, cs, x0, z0, R } = NAV;
+  for (let j = 0; j < h; j++) {
+    const z = z0 + (j + 0.5) * cs;
+    for (let i = 0; i < w; i++) grid[j * w + i] = navInBounds(x0 + (i + 0.5) * cs, z) ? 1 : 0;
   }
-  const crosses = (z <= ROW_Z0 && target.z >= ROW_Z1) || (z >= ROW_Z1 && target.z <= ROW_Z0);
-  if (inRow && (target.z < ROW_Z0 || target.z > ROW_Z1)) {
-    moveTo(e, V(e.pos.x, 0, target.z > z ? ROW_Z1 + 0.4 : ROW_Z0 - 0.4), speed, dt);
-    return false;
+  rects.forEach(r => {
+    const i0 = Math.max(0, Math.ceil((r.x0 - R - x0) / cs - 0.5)), i1 = Math.min(w - 1, Math.floor((r.x1 + R - x0) / cs - 0.5));
+    const j0 = Math.max(0, Math.ceil((r.z0 - R - z0) / cs - 0.5)), j1 = Math.min(h - 1, Math.floor((r.z1 + R - z0) / cs - 0.5));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) grid[j * w + i] = 0;
+  });
+}
+/* Kapıdan ulaşılamayan cepler (raf ile duvar arası gibi) kapalı sayılır: hedef hep ulaşılabilir bir hücreye düşer */
+const sealQ = new Int32Array(NAV.w * NAV.h), sealSeen = new Uint8Array(NAV.w * NAV.h);
+function sealPockets(grid) {
+  const w = NAV.w, start = Math.floor((7 - NAV.z0) / NAV.cs) * w + Math.floor((0.3 - NAV.x0) / NAV.cs);
+  if (grid[start] !== 1) return;
+  sealSeen.fill(0);
+  let h = 0, t = 0; sealQ[t++] = start; sealSeen[start] = 1;
+  while (h < t) {
+    const k = sealQ[h++], i = k % w;
+    if (i > 0 && grid[k - 1] === 1 && !sealSeen[k - 1]) { sealSeen[k - 1] = 1; sealQ[t++] = k - 1; }
+    if (i < w - 1 && grid[k + 1] === 1 && !sealSeen[k + 1]) { sealSeen[k + 1] = 1; sealQ[t++] = k + 1; }
+    if (k >= w && grid[k - w] === 1 && !sealSeen[k - w]) { sealSeen[k - w] = 1; sealQ[t++] = k - w; }
+    if (k + w < grid.length && grid[k + w] === 1 && !sealSeen[k + w]) { sealSeen[k + w] = 1; sealQ[t++] = k + w; }
   }
-  if (crosses) {
-    const xAt = zz => e.pos.x + (target.x - e.pos.x) * (zz - z) / (target.z - z), midX = xAt(1);
-    /* Reyonun önünden de arkasından da dışarıda kalan düz yol serbesttir */
-    if ([ROW_Z0, ROW_Z1].some(zz => xAt(zz) > -10.2 && xAt(zz) < 4.8)) {
-      const gx = AISLES.reduce((a, b) => (Math.abs(b - midX) < Math.abs(a - midX) ? b : a));
-      if (Math.abs(e.pos.x - gx) > 0.2) walk(e, V(gx, 0, z), speed, dt);
-      else moveTo(e, V(gx, 0, target.z > z ? ROW_Z1 + 0.4 : ROW_Z0 - 0.4), speed, dt);
-      return false;
+  for (let k = 0; k < grid.length; k++) if (!sealSeen[k]) grid[k] = 0;
+}
+function ensureNav() { if (!navDirty) return; navDirty = false; fillNav(navGrid, solids); sealPockets(navGrid); navVer++; }
+const cellI = x => Math.floor((x - NAV.x0) / NAV.cs), cellJ = z => Math.floor((z - NAV.z0) / NAV.cs);
+const cellX = i => NAV.x0 + (i + 0.5) * NAV.cs, cellZ = j => NAV.z0 + (j + 0.5) * NAV.cs;
+const navOpen = (grid, i, j) => i >= 0 && j >= 0 && i < NAV.w && j < NAV.h && grid[j * NAV.w + i] === 1;
+/* Kapalı bir noktaya en yakın açık hücre, halka halka aranır */
+function nearestOpen(grid, i, j, maxR) {
+  if (navOpen(grid, i, j)) return j * NAV.w + i;
+  for (let r = 1; r <= (maxR || 40); r++) {
+    let best = -1, bd = 1e9;
+    for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+      if (Math.max(Math.abs(di), Math.abs(dj)) !== r || !navOpen(grid, i + di, j + dj)) continue;
+      const d = di * di + dj * dj; if (d < bd) { bd = d; best = (j + dj) * NAV.w + i + di; }
+    }
+    if (best >= 0) return best;
+  }
+  return -1;
+}
+const gScore = new Float32Array(NAV_N), came = new Int32Array(NAV_N), seenS = new Uint32Array(NAV_N), closedS = new Uint32Array(NAV_N);
+const heapA = new Int32Array(NAV_N * 4), heapF = new Float32Array(NAV_N * 4);
+let heapN = 0, searchId = 0;
+function hpush(k, f) {
+  let i = heapN++;
+  while (i > 0) { const p = (i - 1) >> 1; if (heapF[p] <= f) break; heapA[i] = heapA[p]; heapF[i] = heapF[p]; i = p; }
+  heapA[i] = k; heapF[i] = f;
+}
+function hpop() {
+  const top = heapA[0], k = heapA[--heapN], f = heapF[heapN];
+  let i = 0;
+  for (;;) {
+    let c = 2 * i + 1; if (c >= heapN) break;
+    if (c + 1 < heapN && heapF[c + 1] < heapF[c]) c++;
+    if (heapF[c] >= f) break;
+    heapA[i] = heapA[c]; heapF[i] = heapF[c]; i = c;
+  }
+  heapA[i] = k; heapF[i] = f;
+  return top;
+}
+const DIRS = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.4142], [1, -1, 1.4142], [-1, 1, 1.4142], [-1, -1, 1.4142]];
+function astar(s, g) {
+  const w = NAV.w, gi = g % w, gj = (g / w) | 0;
+  const hf = k => { const dx = Math.abs(k % w - gi), dz = Math.abs(((k / w) | 0) - gj); return Math.max(dx, dz) + 0.4142 * Math.min(dx, dz); };
+  searchId++; heapN = 0;
+  seenS[s] = searchId; gScore[s] = 0; came[s] = -1; hpush(s, hf(s));
+  while (heapN) {
+    const k = hpop();
+    if (closedS[k] === searchId) continue;
+    closedS[k] = searchId;
+    if (k === g) break;
+    const ki = k % w, kj = (k / w) | 0;
+    for (const [di, dj, c] of DIRS) {
+      const ni = ki + di, nj = kj + dj;
+      if (!navOpen(navGrid, ni, nj)) continue;
+      /* Çapraz giderken köşe kesilmez */
+      if (di && dj && (!navOpen(navGrid, ki + di, kj) || !navOpen(navGrid, ki, kj + dj))) continue;
+      const nk = nj * w + ni, ng = gScore[k] + c;
+      if (seenS[nk] === searchId && ng >= gScore[nk]) continue;
+      seenS[nk] = searchId; gScore[nk] = ng; came[nk] = k;
+      if (heapN < heapA.length) hpush(nk, ng + hf(nk));
     }
   }
-  return walk(e, target, speed, dt);
+  if (closedS[g] !== searchId) return null;
+  const cells = [];
+  for (let k = g; k !== -1; k = came[k]) cells.push(k);
+  return cells.reverse();
 }
-/* Kasa tezgâhlarının içinden değil köşelerinden dolaşılır */
-const TILL_BOX = { x0: 2.5, x1: 7.4, z0: 3.2, z1: 5.15 }, TILL2_BOX = { x0: -9.1, x1: -4.2, z0: 3.2, z1: 5.15 };
-function inBox(p, r) { return p.x > r.x0 && p.x < r.x1 && p.z > r.z0 && p.z < r.z1; }
-function hitsBox(a, b, r) {
-  const inset = 0.05;
-  let t0 = 0, t1 = 1;
-  for (const [o, d, lo, hi] of [[a.x, b.x - a.x, r.x0 + inset, r.x1 - inset], [a.z, b.z - a.z, r.z0 + inset, r.z1 - inset]]) {
-    if (Math.abs(d) < 1e-6) { if (o < lo || o > hi) return false; continue; }
-    const p = (lo - o) / d, q = (hi - o) / d;
-    t0 = Math.max(t0, Math.min(p, q)); t1 = Math.min(t1, Math.max(p, q));
-    if (t0 > t1) return false;
+function navLos(ax, az, bx, bz) {
+  const n = Math.ceil(Math.hypot(bx - ax, bz - az) / 0.1);
+  for (let s = 1; s < n; s++) {
+    const t = s / n;
+    if (!navOpen(navGrid, cellI(ax + (bx - ax) * t), cellJ(az + (bz - az) * t))) return false;
   }
   return true;
 }
-function walk(e, target, speed, dt) {
-  const r = [TILL_BOX, TILL2_BOX].find((b, i) => (!i || registers[1].open) && !inBox(e.pos, b) && !inBox(target, b) && hitsBox(e.pos, target, b));
-  if (!r) return moveTo(e, target, speed, dt);
-  const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
-  const cost = c => dist(e.pos, c) + dist(c, target) + (hitsBox(c, target, r) ? 5 : 0);
-  const gap = 0.2; /* köşeler kutunun biraz dışında, varınca yol açık kalır */
-  const via = [V(r.x0 - gap, 0, r.z0 - gap), V(r.x1 + gap, 0, r.z0 - gap), V(r.x1 + gap, 0, r.z1 + gap), V(r.x0 - gap, 0, r.z1 + gap)]
-    .filter(c => dist(e.pos, c) > 0.13 && !hitsBox(e.pos, c, r))
-    .sort((a, b) => cost(a) - cost(b))[0];
-  moveTo(e, via || target, speed, dt);
-  return false;
+function findPath(from, to) {
+  const ti = cellI(to.x), tj = cellJ(to.z);
+  const s = nearestOpen(navGrid, cellI(from.x), cellJ(from.z)), g = nearestOpen(navGrid, ti, tj);
+  if (s < 0 || g < 0) return [V(to.x, 0, to.z)];
+  const end = g === tj * NAV.w + ti ? V(to.x, 0, to.z) : V(cellX(g % NAV.w), 0, cellZ((g / NAV.w) | 0));
+  if (s === g) return [end];
+  const cells = astar(s, g);
+  if (!cells) return [end];
+  const pts = cells.map(k => V(cellX(k % NAV.w), 0, cellZ((k / NAV.w) | 0)));
+  pts[pts.length - 1] = end;
+  /* Görüş hattı açık ara noktalar atlanır, yol düz çizgilere iner */
+  const out = [];
+  let ax = from.x, az = from.z, i = 0;
+  if (!navOpen(navGrid, cellI(from.x), cellJ(from.z))) { out.push(pts[0]); ax = pts[0].x; az = pts[0].z; }
+  while (i < pts.length - 1) {
+    let j = i + 1;
+    while (j + 1 < pts.length && navLos(ax, az, pts[j + 1].x, pts[j + 1].z)) j++;
+    out.push(pts[j]); ax = pts[j].x; az = pts[j].z; i = j;
+  }
+  return out.length ? out : [end];
+}
+/* Hedefe yol bulup yürür; vardığında true döner. Yol yalnızca hedef hücresi ya da harita değişince yeniden hesaplanır */
+function routed(e, target, speed, dt) {
+  ensureNav();
+  const key = cellI(target.x) * 100000 + cellJ(target.z);
+  if (!e.navPath || e.navKey !== key || e.navVer !== navVer) {
+    if (pathBudget <= 0) return false;
+    pathBudget--;
+    e.navPath = findPath(e.pos, target); e.navKey = key; e.navVer = navVer; e.navI = 0;
+  }
+  const path = e.navPath;
+  while (e.navI < path.length - 1) { if (!moveTo(e, path[e.navI], speed, dt)) return false; e.navI++; }
+  return moveTo(e, path[path.length - 1], speed, dt);
 }
 function updateActor(e, dt) {
   const r = e.rig;
@@ -1023,6 +1097,8 @@ for (let z = -5.5; z <= 8.5; z += 1.5) {
 }
 [0.45, 0.85].forEach(y => { box(0.08, 0.1, 5.2, M.wood, YARD_X, y, -3); box(0.08, 0.1, 5.8, M.wood, YARD_X, y, 5.8); });
 const yardGate = new THREE.Group(); yardGate.position.set(YARD_X, 0, 1); scene.add(yardGate);
+/* Avlu açılınca çitin iki parçası da engel olur, kapı aralığından geçilir */
+const YARD_FENCE = [{ x0: YARD_X - 0.12, x1: YARD_X + 0.12, z0: -5.6, z1: -0.4 }, { x0: YARD_X - 0.12, x1: YARD_X + 0.12, z0: 2.9, z1: 8.6 }];
 box(0.14, 1.2, 4, M.mustard, 0, 0.62, 0, yardGate);
 const yard = new THREE.Group(); yard.visible = false; yard.position.set(39, 0, 1.5); scene.add(yard);
 const yardGround = new THREE.Mesh(new THREE.PlaneGeometry(17, 15.5), mat(0xc9a877));
@@ -1032,7 +1108,8 @@ const barn = trayStation('sut', 35, -3.4, 7, V(35, 0, -0.5), -1.5, { x0: 32.2, x
 box(4.6, 2.3, 2.3, M.brick, 0, 1.15, 0, barn);
 box(1.5, 1.6, 0.06, M.white, 0, 0.8, 1.17, barn);
 const barnRoof = mesh(new THREE.ConeGeometry(3.6, 1.5, 4), M.ink, 0, 3.05, 0, barn); barnRoof.rotation.y = Math.PI / 4; barnRoof.scale.z = 0.58;
-const cow = new THREE.Group(); cow.position.set(39.4, 0, -2.6); cow.visible = false; scene.add(cow);
+const cowBase = { x: 39.4, z: -2.6 };
+const cow = new THREE.Group(); cow.position.set(cowBase.x, 0, cowBase.z); cow.visible = false; scene.add(cow);
 const cowBody = box(1.4, 0.8, 0.7, M.white, 0, 0.92, 0, cow);
 box(0.5, 0.42, 0.72, M.ink, -0.2, 0.98, 0, cow).castShadow = false;
 box(0.46, 0.46, 0.46, M.white, 0.86, 1.2, 0, cow);
@@ -1406,6 +1483,72 @@ function addToPile(amount, from) {
   }
 }
 
+/* ---------- Yerleştirilebilir nesneler: raflar ve üretim yerleri taşınır, 90° döner ---------- */
+const PLACE = {};
+function rotPt(lx, lz, x, z, r) {
+  const t = r * Math.PI / 2, c = Math.round(Math.cos(t)), s = Math.round(Math.sin(t));
+  return [x + lx * c + lz * s, z - lx * s + lz * c];
+}
+function rotRect(R, x, z, r, out) {
+  const a = rotPt(R.x0, R.z0, x, z, r), b = rotPt(R.x1, R.z1, x, z, r);
+  out = out || {};
+  out.x0 = Math.min(a[0], b[0]); out.x1 = Math.max(a[0], b[0]); out.z0 = Math.min(a[1], b[1]); out.z1 = Math.max(a[1], b[1]);
+  return out;
+}
+/* Her nesnenin parçaları, kurulduğu yere göre yerel ölçülere çevrilip saklanır */
+function registerPlace(kind, o, extras) {
+  const g = o.group, hx = g.position.x, hz = g.position.z;
+  const L = p => ({ x: p.x - hx, y: p.y, z: p.z - hz });
+  const LR = R => ({ x0: R.x0 - hx, x1: R.x1 - hx, z0: R.z0 - hz, z1: R.z1 - hz });
+  /* İz, köşeleri değil gerçek noktaları sayar: 45° döndürülmüş çatılar olduğundan büyük görünmez */
+  g.updateMatrixWorld(true);
+  const bb = new THREE.Box3(), tmp = V(0, 0, 0);
+  g.traverse(m => {
+    const pos = m.geometry && m.geometry.attributes.position; if (!pos) return;
+    for (let i = 0; i < pos.count; i++) bb.expandByPoint(tmp.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld));
+  });
+  const foot = { x0: bb.min.x - hx, x1: bb.max.x - hx, z0: bb.min.z - hz, z1: bb.max.z - hz };
+  [o.solid].concat(o.fence || []).forEach(R => {
+    if (!R) return;
+    foot.x0 = Math.min(foot.x0, R.x0 - hx); foot.x1 = Math.max(foot.x1, R.x1 - hx);
+    foot.z0 = Math.min(foot.z0, R.z0 - hz); foot.z1 = Math.max(foot.z1, R.z1 - hz);
+  });
+  const p = {
+    key: kind + ':' + o.type, kind, o, home: { x: hx, z: hz }, x: hx, z: hz, r: 0, foot,
+    slots: (kind === 'shelf' ? o.slots : o.slots.map(s => s.pos)).map(L),
+    spot: L(kind === 'shelf' ? o.stand : o.center),
+    solid: o.solid ? LR(o.solid) : null, fence: (o.fence || []).map(LR), extras: extras || [],
+  };
+  p.extras.forEach(ex => { ex.lx = ex.x - hx; ex.lz = ex.z - hz; });
+  return PLACE[p.key] = p;
+}
+function placeAt(p, x, z, r) {
+  p.x = x; p.z = z; p.r = r;
+  const o = p.o, th = r * Math.PI / 2, sp = rotPt(p.spot.x, p.spot.z, x, z, r);
+  o.group.position.set(x, 0, z); o.group.rotation.y = th;
+  if (p.kind === 'shelf') {
+    o.stand.set(sp[0], 0, sp[1]); o.x = x; o.rot = r;
+    p.slots.forEach((l, i) => { const q = rotPt(l.x, l.z, x, z, r); o.slots[i].set(q[0], l.y, q[1]); });
+    o.items.forEach((it, i) => { it.t.copy(o.slots[i]); it.p.copy(it.t); it.mesh.rotation.y = th; });
+  } else {
+    o.center.set(sp[0], 0, sp[1]);
+    p.slots.forEach((l, i) => {
+      const q = rotPt(l.x, l.z, x, z, r), sl = o.slots[i];
+      sl.pos.set(q[0], l.y, q[1]);
+      if (sl.it) { sl.it.t.copy(sl.pos); sl.it.p.copy(sl.pos); }
+    });
+  }
+  if (p.solid) rotRect(p.solid, x, z, r, o.solid);
+  p.fence.forEach((R, i) => rotRect(R, x, z, r, o.fence[i]));
+  p.extras.forEach(ex => { const q = rotPt(ex.lx, ex.lz, x, z, r); ex.set(q[0], q[1]); });
+  navDirty = true;
+}
+const footOf = p => rotRect(p.foot, p.x, p.z, p.r);
+Object.values(shelves).forEach(sh => registerPlace('shelf', sh));
+Object.values(sources).forEach(src => registerPlace('src', src,
+  src.type === 'yumurta' ? flock.map(f => ({ x: f.p[0], z: f.p[1], set(x, z) { f.p[0] = x; f.p[1] = z; f.g.position.set(x, 0, z); } }))
+    : src.type === 'sut' ? [{ x: cowBase.x, z: cowBase.z, set(x, z) { cowBase.x = x; cowBase.z = z; cow.position.z = z; } }] : []));
+
 /* ---------- Oyuncu ve yardımcılar ---------- */
 const player = newActor({ body: 0x2c6fbb, skin: 0xf2c6a0, apron: true, mustache: true, cap: 0x2c2a3f }, V(-8, 0, -1.2), 4);
 const LOOKS = [[0xe4472f, 0x5a3825], [0x8b5fbf, 0x2c2a3f], [0xf5912e, 0xb9804a], [0x36a6c9, 0x2c2a3f], [0xe87fb0, 0x8a5a33], [0x5fb25a, 0xd9d4c8], [0xf5b92e, 0x5a3825]];
@@ -1414,11 +1557,11 @@ let speed = 7;
 let cashier = null, cashier2 = null;
 const helpers = [];
 
-function tryCollect(e, reach) {
+function tryCollect(e, reach, only) {
   if (e.stack.length >= e.cap) return;
   if ((e.collectT -= tickDt) > 0) return;
   for (const src of Object.values(sources)) {
-    if (!src.unlocked) continue;
+    if (!src.unlocked || (only && src.type !== only)) continue;
     const n = nearestRipe(src, e.pos);
     if (n && n.d < (reach || src.reach)) {
       const it = n.slot.it; n.slot.it = null; n.slot.t = 0;
@@ -1458,7 +1601,7 @@ function nameTag(actor, text, color) {
 }
 function addHelper(i) {
   const look = [{ skin: 0xd9a273, cap: 0xf5b92e }, { skin: 0xf2c6a0, cap: 0x36a6c9 }, { skin: 0xa86f48, cap: 0xe4472f }, { skin: 0xf7d9bf, cap: 0xe87fb0 }, { skin: 0xd9a273, cap: 0x8b5fbf }, { skin: 0xf2c6a0, cap: 0x5fb25a }, { skin: 0xa86f48, cap: 0xf5912e }][i];
-  const h = newActor(Object.assign({}, STAFF, look), V(-8.5 + i * 1.5, 0, -1.2), 4);
+  const h = newActor(Object.assign({}, STAFF, look), V(-8.5 + i * 1.5, 0, -1.2), helperCap());
   nameTag(h, 'Toplayıcı');
   h.state = 'pick'; h.shelf = null; helpers.push(h);
 }
@@ -1496,7 +1639,8 @@ function helperAI(h, dt) {
   if (h.state === 'get') {
     const n = nearestRipe(sources[h.shelf.type], h.pos);
     if (h.stack.length >= h.cap || !n) { h.state = h.stack.length ? 'put' : 'pick'; }
-    else { if (n.d > 0.9) routed(h, n.slot.pos, 4.6 * staffMult(), dt); else tryCollect(h, 1); }
+    /* Ürün tezgâhın üstündeyse yol en yakın açık noktada biter, oradan uzanıp alınır */
+    else if (n.d <= 0.9 || routed(h, n.slot.pos, 4.6 * staffMult(), dt)) tryCollect(h, 2.2, h.shelf.type);
   }
   if (h.state === 'put') {
     if (routed(h, h.shelf.stand, 4.6 * staffMult(), dt)) tryDeposit(h);
@@ -1573,8 +1717,9 @@ function setBubble(c, type, n) {
   if (type) { c.bubble.material.map = bubbleTex(type, n); c.bubble.material.needsUpdate = true; }
 }
 function chooseSpot(c) {
-  const s = c.wants[0].shelf.stand;
-  c.spot.set(s.x + rnd(-1, 1), 0, s.z + rnd(-0.05, 0.55));
+  /* Rafın önünde, rafın yönüne göre biraz sağa sola yayılır */
+  const sh = c.wants[0].shelf, s = sh.stand, t = (sh.rot || 0) * Math.PI / 2, a = rnd(-1, 1), b = rnd(-0.05, 0.55);
+  c.spot.set(s.x + a * Math.cos(t) + b * Math.sin(t), 0, s.z - a * Math.sin(t) + b * Math.cos(t));
 }
 function updateCustomer(c, dt) {
   /* Sabır: sırası gelip banda ürün koyana kadar azalır, azaldıkça balon kızarır */
@@ -1595,7 +1740,8 @@ function updateCustomer(c, dt) {
   } else if (c.state === 'take') {
     const w = c.wants[0];
     setBubble(c, w.shelf.type, w.n);
-    c.face = angleTo(c.face, Math.PI, Math.min(1, dt * 8));
+    const sg = w.shelf.group.position;
+    c.face = angleTo(c.face, Math.atan2(sg.x - c.pos.x, sg.z - c.pos.z), Math.min(1, dt * 8));
     if ((c.takeT -= dt) <= 0 && w.shelf.items.length) {
       c.stack.push(w.shelf.items.pop()); c.takeT = 0.4; w.n--;
       if (!w.n) {
@@ -1764,6 +1910,16 @@ const PADS = [
   { id: 'deterjanRaf', name: 'Deterjan rafı', cost: 1500, x: 5.4, z: -7.4, req: ['deterjanKoli'] },
   { id: 'cirak7', name: 'Yedinci toplayıcı', cost: 3400, x: 6.6, z: 11.2, req: ['deterjanRaf', 'cirak6'] },
 ];
+/* Raflar ve üretim yerleri yerdeki karelerden değil Yap menüsünden alınır, yerini oyuncu seçer */
+const MENU_OBJ = {
+  domRaf: 'shelf:domates', ekmekRaf: 'shelf:ekmek', ayranRaf: 'shelf:ayran', elmaRaf: 'shelf:elma', simitRaf: 'shelf:simit',
+  yumurtaRaf: 'shelf:yumurta', peynirRaf: 'shelf:peynir', sutDolap: 'shelf:sut', gazozDolap: 'shelf:gazoz', meyveDolap: 'shelf:meyve',
+  borekRaf: 'shelf:borek', cipsRaf: 'shelf:cips', cikoRaf: 'shelf:cikolata', sabunRaf: 'shelf:sabun', deterjanRaf: 'shelf:deterjan',
+  domTarla: 'src:domates', firin: 'src:ekmek', ayranHane: 'src:ayran', elmaBahce: 'src:elma', simitAraba: 'src:simit',
+  kumes: 'src:yumurta', mandira: 'src:peynir', ahir: 'src:sut', gazozMak: 'src:gazoz', sikma: 'src:meyve',
+  borekFirin: 'src:borek', cipsKoli: 'src:cips', cikoKoli: 'src:cikolata', sabunKoli: 'src:sabun', deterjanKoli: 'src:deterjan',
+};
+PADS.forEach(p => { if (MENU_OBJ[p.id]) { p.obj = MENU_OBJ[p.id]; p.menu = p.obj.split(':')[0]; } });
 const pops = [];
 function reveal(group, anim) { group.visible = true; if (anim) pops.push({ o: group, t: 0 }); }
 function openSource(type, anim) {
@@ -1773,6 +1929,7 @@ function openSource(type, anim) {
 }
 function openShelf(type, anim) { const s = shelves[type]; s.unlocked = true; reveal(s.group, anim); solids.push(s.solid); }
 function applyUnlock(id, anim) {
+  navDirty = true; /* yeni engel ya da açılan alan: yollar yeniden hesaplanır */
   switch (id) {
     case 'domTarla': openSource('domates', anim); break;
     case 'domRaf': openShelf('domates', anim); break;
@@ -1803,7 +1960,7 @@ function applyUnlock(id, anim) {
     case 'kumes': openSource('yumurta', anim); flock.forEach(f => { f.g.visible = true; }); break;
     case 'arkaSalon':
       annexOpen = true; openAnnexWall(); solids.push(...annexSolids); reveal(annex, anim); break;
-    case 'avlu': yardOpen = true; yardGate.visible = false; reveal(yard, anim); break;
+    case 'avlu': yardOpen = true; yardGate.visible = false; reveal(yard, anim); solids.push(...YARD_FENCE); break;
     case 'ahir': openSource('sut', anim); cow.visible = true; break;
     case 'sutDolap': openShelf('sut', anim); break;
     case 'gazozMak': openSource('gazoz', anim); break;
@@ -1846,13 +2003,17 @@ const UPS = [
   { id: 'yuruyus', name: 'Spor ayakkabı', base: 130, max: 10, info: n => `%${6 * n} daha hızlı yürürsün` },
   { id: 'personel', name: 'Çalışan eğitimi', base: 390, max: 15, req: 'kasiyer', info: n => `Çalışanlar %${12 * n} daha hızlı` },
   { id: 'mesai', name: 'Gece vardiyası', base: 520, max: 11, req: 'kasiyer', info: n => `Sen yokken ${1 + n} saate kadar kazanırsın` },
+  { id: 'tasima', name: 'Toplayıcı kasası', base: 450, max: 8, req: 'cirak', lockText: 'Toplayıcıyla açılır', info: n => `Toplayıcılar ${helperCap(n)} ürün taşır` },
 ];
+/* Toplayıcı taşıma kapasitesi: 4 ürünle başlar, her seviye +2 */
+function helperCap(n) { return 4 + 2 * (n === undefined ? lv('tasima') : n); }
 const upCost = u => Math.round(u.base * Math.pow(1.5, lv(u.id)) / 10) * 10;
 const upReady = u => !u.req || S.unlocked[u.req];
 const upAffordable = () => UPS.some(u => upReady(u) && lv(u.id) < u.max && S.money >= upCost(u));
 function applyUpgrade(id, n) {
   if (id === 'hasat') Object.values(sources).forEach(s => { s.grow = s.baseGrow * Math.pow(0.9, lv('hasat')); });
   if (id === 'sepet') player.cap += n;
+  if (id === 'tasima') helpers.forEach(h => { h.cap += 2 * n; });
   if (id === 'fiyat') Object.values(shelves).forEach(sh => { redrawTex(sh.tagEntry.t); });
 }
 function buyUpgrade(id) {
@@ -1877,7 +2038,7 @@ function renderUpgrades() {
     note.textContent = max ? u.info(n) : 'Sonraki: ' + u.info(n + 1);
     info.append(title, note);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'upBuy';
-    if (!upReady(u)) { b.classList.add('locked'); b.disabled = true; b.textContent = 'Kasiyerle açılır'; }
+    if (!upReady(u)) { b.classList.add('locked'); b.disabled = true; b.textContent = u.lockText || 'Kasiyerle açılır'; }
     else if (max) { b.classList.add('max'); b.disabled = true; b.textContent = 'Tamam'; }
     else {
       b.textContent = '₺' + c.toLocaleString('tr-TR'); b.classList.toggle('poor', S.money < c);
@@ -2075,6 +2236,230 @@ setInterval(() => {
   if (!$('pBranches').hidden) refreshBranches();
   if (!$('pBranch').hidden && brCur) refreshBranch();
 }, 1000);
+
+/* ---------- Yap menüsü: sekmelerden raf ve üretim yeri alınır, dükkâna istenen yere konur ---------- */
+const STARTERS = [{ id: null, name: 'Karpuz rafı', obj: 'shelf:karpuz', menu: 'shelf' }, { id: null, name: 'Karpuz bahçesi', obj: 'src:karpuz', menu: 'src' }];
+let buildTab = 'shelf';
+const menuItems = tab => STARTERS.filter(s => s.menu === tab).concat(PADS.filter(p => p.menu === tab));
+const itemOwned = it => !it.id || !!S.unlocked[it.id];
+const itemReady = it => !itemOwned(it) && (it.req || []).every(r => S.unlocked[r]) && S.earned >= (it.minEarned || 0);
+const padName = id => (PADS.find(p => p.id === id) || {}).name || id;
+const buildAffordable = () => PADS.some(p => p.menu && itemReady(p) && S.money >= p.cost);
+function renderBuild() {
+  $('buildMoney').textContent = fmt(S.money);
+  document.querySelectorAll('#buildTabs button').forEach(b => {
+    const on = b.dataset.tab === buildTab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  const root = $('buildList'); root.textContent = '';
+  let locked = 0;
+  menuItems(buildTab).forEach(it => {
+    const owned = itemOwned(it), ready = itemReady(it);
+    if (!owned && !ready && ++locked > 2) return; /* sıradaki iki kilitli şey görünür, gerisi sürpriz */
+    const row = document.createElement('div'); row.className = 'upRow';
+    const info = document.createElement('div'), title = document.createElement('b'), note = document.createElement('small');
+    title.textContent = it.name; info.append(title, note);
+    let btn;
+    if (owned) {
+      note.textContent = 'Yerleştirildi';
+      btn = brButton('Taşı', 'ghost'); btn.setAttribute('aria-label', it.name + ' taşı');
+      btn.addEventListener('click', () => startPlace(PLACE[it.obj], null));
+    } else if (ready) {
+      note.textContent = 'Al, yerini sen seç';
+      btn = brButton(fmt(it.cost)); btn.classList.toggle('poor', S.money < it.cost);
+      btn.setAttribute('aria-label', `${it.name} al, ${fmt(it.cost)}`);
+      btn.addEventListener('click', () => {
+        if (S.money < it.cost) { btn.textContent = 'Para yetmiyor'; sfx(190, 0.14); setTimeout(() => { if (!$('pBuild').hidden) renderBuild(); }, 900); return; }
+        startPlace(PLACE[it.obj], it);
+      });
+    } else {
+      const miss = (it.req || []).filter(r => !S.unlocked[r]).map(padName);
+      note.textContent = miss.length ? 'Önce: ' + miss.join(', ') : 'İlk satıştan sonra açılır';
+      btn = brButton('Kilitli', 'locked'); btn.disabled = true;
+    }
+    row.append(info, btn); root.append(row);
+  });
+}
+
+/* Yerleştirme modu: oyun durur, kamera serbest kalır; nesne sürüklenir, döndürülür, uygunsa konur */
+const build = { p: null, item: null, orig: null, valid: false, reason: '', focus: V(0, 0, 0), arrange: false };
+const footMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0x3f9b5a, transparent: true, opacity: 0.55, depthWrite: false }));
+footMesh.rotation.x = -Math.PI / 2; footMesh.visible = false; footMesh.renderOrder = 2; scene.add(footMesh);
+const spotMesh = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.5, 24), new THREE.MeshBasicMaterial({ color: 0xf5b92e, depthWrite: false }));
+spotMesh.rotation.x = -Math.PI / 2; spotMesh.visible = false; spotMesh.renderOrder = 3; scene.add(spotMesh);
+const SHELF_ZONE = () => ({ x0: -10, x1: 10, z0: annexOpen ? -15.1 : -5.1, z1: 2.45 });
+function prodZones() {
+  /* Arka kenar çatıların taşmasına izin verir; yürünen alan yine -4,6'da biter */
+  const z = [{ x0: -32, x1: -10.8, z0: -7, z1: 9.2 }, { x0: 10.8, x1: yardOpen ? 47 : 30.4, z0: -7, z1: 9.2 }];
+  if (depotOpen) z.push({ x0: -17.2, x1: 17.2, z0: 15.2, z1: 21.6 });
+  return z;
+}
+const SAFE_ZONE = { x0: 7.2, x1: 10.4, z0: -1.4, z1: 2.7 }; /* muhasebecinin kasası ve yolu */
+const within = (a, b) => a.x0 >= b.x0 - 1e-6 && a.x1 <= b.x1 + 1e-6 && a.z0 >= b.z0 - 1e-6 && a.z1 <= b.z1 + 1e-6;
+const overlap = (a, b, m) => a.x0 < b.x1 + m && a.x1 > b.x0 - m && a.z0 < b.z1 + m && a.z1 > b.z0 - m;
+const inRect = (pt, R, m) => pt.x > R.x0 - m && pt.x < R.x1 + m && pt.z > R.z0 - m && pt.z < R.z1 + m;
+const testGrid = new Uint8Array(NAV_N), bfsSeen = new Uint8Array(NAV_N), bfsQ = new Int32Array(NAV_N);
+/* Kapıdan yürünerek ulaşılması gereken her yere hâlâ gidilebiliyor mu? */
+function reachAll(grid, extraSpot) {
+  bfsSeen.fill(0);
+  const start = nearestOpen(grid, cellI(0.3), cellJ(7), 4);
+  if (start < 0) return false;
+  let h = 0, t = 0; bfsQ[t++] = start; bfsSeen[start] = 1;
+  const w = NAV.w;
+  while (h < t) {
+    const k = bfsQ[h++], i = k % w, j = (k / w) | 0;
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([di, dj]) => {
+      const ni = i + di, nj = j + dj, nk = nj * w + ni;
+      if (navOpen(grid, ni, nj) && !bfsSeen[nk]) { bfsSeen[nk] = 1; bfsQ[t++] = nk; }
+    });
+  }
+  const pts = [REG, queuePos(0), queuePos(1), V(0.3, 0, 10.6), SAFE_STAND, V(8.3, 0, 2.3)];
+  Object.values(PLACE).forEach(q => { if (q.o.unlocked) pts.push(q.kind === 'shelf' ? q.o.stand : q.o.center); });
+  if (extraSpot) pts.push(extraSpot);
+  if (registers[1].open) pts.push(REG2, registers[1].at(0));
+  if (yardOpen) pts.push(V(31.5, 0, 1.2));
+  if (depotOpen) pts.push(V(0.3, 0, 14));
+  PADS.forEach(q => { if (!q.menu && padOpen(q)) pts.push(V(q.x, 0, q.z)); });
+  return pts.every(pt => { const k = nearestOpen(grid, cellI(pt.x), cellJ(pt.z), 3); return k >= 0 && bfsSeen[k]; });
+}
+function checkPlace() {
+  const p = build.p; if (!p) return;
+  const f = footOf(p);
+  const fail = why => { build.valid = false; build.reason = why; };
+  const own = new Set();
+  Object.values(PLACE).forEach(q => { if (q.o.solid) own.add(q.o.solid); (q.o.fence || []).forEach(r => own.add(r)); });
+  const zones = p.kind === 'shelf' ? [SHELF_ZONE()] : prodZones();
+  if (!zones.some(zn => within(f, zn))) fail(p.kind === 'shelf' ? 'Raflar dükkânın içine konur' : 'Üretim yerleri dükkânın dışına konur, sokağa değil');
+  else if (Object.values(PLACE).some(q => q !== p && q.o.unlocked && overlap(f, footOf(q), 0.05))) fail('Başka bir şeyin üstüne geliyor');
+  else if (solids.some(s => !own.has(s) && overlap(f, s, 0))) fail('Buraya sığmıyor');
+  else if (p.kind === 'shelf' && overlap(f, SAFE_ZONE, 0)) fail('Bu köşe muhasebeciye ayrıldı');
+  else if (PADS.some(q => !q.menu && !S.unlocked[q.id] && overlap(f, { x0: q.x - 1.5, x1: q.x + 1.5, z0: q.z - 1.5, z1: q.z + 1.5 }, 0))) fail('Satın alma karesinin üstüne konmaz');
+  else {
+    const rects = solids.slice();
+    if (!p.o.unlocked) { if (p.o.solid) rects.push(p.o.solid); rects.push(...(p.o.fence || [])); }
+    fillNav(testGrid, rects);
+    if (!reachAll(testGrid, p.o.unlocked ? null : (p.kind === 'shelf' ? p.o.stand : p.o.center))) fail('Yolu ya da önünü kapatıyor');
+    else { build.valid = true; build.reason = ''; }
+  }
+  footMesh.position.set((f.x0 + f.x1) / 2, 0.09, (f.z0 + f.z1) / 2);
+  footMesh.scale.set(f.x1 - f.x0 + 0.8, f.z1 - f.z0 + 0.8, 1);
+  footMesh.material.color.set(build.valid ? 0x3f9b5a : 0xe4472f);
+  const s = p.kind === 'shelf' ? p.o.stand : p.o.center;
+  spotMesh.position.set(s.x, 0.11, s.z);
+  footMesh.visible = spotMesh.visible = true;
+}
+function syncBuildBar() {
+  const p = build.p, ok = $('bOk'), msg = $('buildMsg');
+  $('bRotate').hidden = $('bCancel').hidden = !p;
+  msg.classList.toggle('bad', !!p && !build.valid);
+  if (!p) {
+    footMesh.visible = spotMesh.visible = false;
+    msg.textContent = 'Taşımak istediğin rafa ya da üretim yerine dokun. Boş yeri sürükleyerek etrafa bak.';
+    ok.textContent = 'Bitti'; ok.disabled = false; return;
+  }
+  const who = p.kind === 'shelf' ? 'müşterinin' : 'toplayıcının';
+  msg.textContent = build.valid ? `Sürükle, döndür ve ${build.item ? 'yerleştir' : 'bırak'}. Sarı halka ${who} durduğu yer.` : build.reason;
+  ok.textContent = build.item ? 'Yerleştir · ' + fmt(build.item.cost) : 'Tamam';
+  ok.disabled = !build.valid;
+}
+function enterBuild() {
+  gameState = 'build'; stick.id = null; hideStick();
+  $('menu').hidden = true; $('hud').hidden = false;
+  document.body.classList.add('building'); $('buildBar').hidden = false;
+}
+function leaveBuild(toMenu) {
+  footMesh.visible = spotMesh.visible = false;
+  build.p = build.item = build.orig = null; build.arrange = false;
+  document.body.classList.remove('building'); $('buildBar').hidden = true;
+  navDirty = true; save();
+  if (toMenu) { gameState = 'pause'; setPlaying(false); renderBuild(); showPanel('pBuild'); } else play();
+}
+function startPlace(p, item) {
+  build.p = p; build.item = item; build.orig = { x: p.x, z: p.z, r: p.r };
+  if (item) p.o.group.visible = true;
+  build.focus.set(p.x, 0, p.z);
+  enterBuild(); checkPlace(); syncBuildBar();
+}
+function startArrange() {
+  build.arrange = true; build.p = build.item = build.orig = null; build.focus.set(player.pos.x, 0, player.pos.z);
+  enterBuild(); syncBuildBar();
+}
+function cancelPlace() {
+  const p = build.p;
+  if (p) { placeAt(p, build.orig.x, build.orig.z, build.orig.r); if (build.item) p.o.group.visible = false; }
+  if (build.arrange) { build.p = build.item = build.orig = null; syncBuildBar(); } else leaveBuild(true);
+}
+function confirmPlace() {
+  const p = build.p;
+  if (!p) { leaveBuild(false); return; }
+  if (!build.valid) { sfx(190, 0.14); return; }
+  const it = build.item && PLACE[build.item.obj] === p ? build.item : null;
+  if (it) {
+    if (S.money < it.cost) { $('buildMsg').textContent = 'Para yetmiyor'; $('buildMsg').classList.add('bad'); sfx(190, 0.14); return; }
+    S.money -= it.cost; S.unlocked[it.id] = true;
+    p.o.group.visible = false; applyUnlock(it.id, true);
+    confetti(V(p.x, 1, p.z)); sfx(660, 0.1); sfx(880, 0.1, 0.09); sfx(1320, 0.16, 0.18);
+    toast(it.name + ' açıldı!', 1500);
+  } else sfx(880, 0.08);
+  navDirty = true;
+  if (build.arrange) { build.p = build.item = build.orig = null; save(); syncBuildBar(); } else leaveBuild(false);
+}
+$('bRotate').addEventListener('click', () => { const p = build.p; if (!p) return; placeAt(p, p.x, p.z, (p.r + 1) % 4); checkPlace(); syncBuildBar(); sfx(620, 0.05); });
+$('bCancel').addEventListener('click', cancelPlace);
+$('bOk').addEventListener('click', confirmPlace);
+$('buildBtn').addEventListener('click', () => { if (gameState !== 'play') return; markHint('build'); pause(); renderBuild(); showPanel('pBuild'); });
+$('btnBuildClose').addEventListener('click', play);
+$('btnArrange').addEventListener('click', startArrange);
+document.querySelectorAll('#buildTabs button').forEach(b => b.addEventListener('click', () => { buildTab = b.dataset.tab; renderBuild(); }));
+
+/* Dokunma: nesnenin üstünden sürüklenirse nesne, boş yerden sürüklenirse kamera kayar. Sürükleme boyunca kamera dondurulmuş sayılır */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(V(0, 1, 0), 0), dragCam = new THREE.PerspectiveCamera();
+function groundAt(e, cam) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(ndc, cam);
+  return ray.ray.intersectPlane(groundPlane, V(0, 0, 0));
+}
+const drag = { id: null, mode: null, start: null, ox: 0, oz: 0, fx: 0, fz: 0, sx: 0, sy: 0, moved: false };
+function buildDown(e) {
+  dragCam.copy(camera); dragCam.updateMatrixWorld();
+  const g = groundAt(e, dragCam); if (!g) return;
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* yakalama isteğe bağlı */ }
+  Object.assign(drag, { id: e.pointerId, start: g, sx: e.clientX, sy: e.clientY, moved: false });
+  const p = build.p;
+  /* Uzun nesnelerde parmak tepeye değer: önce modelin kendisine, sonra yerdeki izine bakılır */
+  if (p && (inRect(g, footOf(p), 0.5) || ray.intersectObject(p.o.group, true).length)) { drag.mode = 'obj'; drag.ox = p.x - g.x; drag.oz = p.z - g.z; }
+  else { drag.mode = 'pan'; drag.fx = build.focus.x; drag.fz = build.focus.z; }
+}
+function buildMove(e) {
+  if (e.pointerId !== drag.id) return;
+  if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 8) drag.moved = true;
+  const g = groundAt(e, dragCam); if (!g) return;
+  if (drag.mode === 'obj' && build.p) {
+    const snap = v => Math.round(v * 2) / 2, p = build.p;
+    const x = snap(g.x + drag.ox), z = snap(g.z + drag.oz);
+    if (x !== p.x || z !== p.z) { placeAt(p, x, z, p.r); checkPlace(); syncBuildBar(); }
+  } else if (drag.mode === 'pan') {
+    build.focus.set(Math.max(-31, Math.min(46, drag.fx - (g.x - drag.start.x))), 0, Math.max(-15, Math.min(21, drag.fz - (g.z - drag.start.z))));
+  }
+}
+function buildUp(e) {
+  if (e.pointerId !== drag.id) return;
+  drag.id = null;
+  /* Nesne ekranın kenarına kaydıysa kamera ona döner */
+  if (drag.mode === 'obj' && build.p) {
+    if (Math.hypot(build.p.x - build.focus.x, build.p.z - build.focus.z) > 7) build.focus.set(build.p.x, 0, build.p.z);
+    return;
+  }
+  /* Düzenleme modunda dokunulan nesne seçilir: önce modele, sonra yerdeki izine bakılır */
+  if (!drag.moved && build.arrange && !build.p) {
+    const live = Object.values(PLACE).filter(q => q.o.unlocked);
+    let hit = null, best = 1e9;
+    live.forEach(q => { const h = ray.intersectObject(q.o.group, true)[0]; if (h && h.distance < best) { best = h.distance; hit = q; } });
+    hit = hit || live.find(q => inRect(drag.start, footOf(q), 0.2));
+    if (hit) { build.p = hit; build.item = null; build.orig = { x: hit.x, z: hit.z, r: hit.r }; checkPlace(); syncBuildBar(); sfx(700, 0.05); }
+  }
+}
+
 const padGeo = new THREE.PlaneGeometry(2.8, 2.8);
 PADS.forEach(p => {
   const g = new THREE.Group(); g.position.set(p.x, 0.07, p.z); g.rotation.x = -Math.PI / 2; g.visible = false; scene.add(g);
@@ -2101,7 +2486,7 @@ function drawPad(p) {
   g.font = `800 66px ${FONT}`; g.fillStyle = '#c23520'; g.fillText('₺' + left, w / 2, 204);
   p.tex.needsUpdate = true;
 }
-const padOpen = p => !S.unlocked[p.id] && (p.req || []).every(r => S.unlocked[r]) && S.earned >= (p.minEarned || 0);
+const padOpen = p => !p.menu && !S.unlocked[p.id] && (p.req || []).every(r => S.unlocked[r]) && S.earned >= (p.minEarned || 0);
 function padsNow() { return PADS.filter(padOpen); }
 function updatePads(dt) {
   PADS.forEach(p => {
@@ -2175,6 +2560,9 @@ function hintNow() {
   if (!accountant && !seen.pile && pile.amount > 0) return { text: 'Kasanın yanındaki parayı topla', at: PILE, y: 1.8 };
   const pad = padsNow().find(p => S.money >= p.cost - p.paid);
   if (pad) return { text: `${pad.name} için kareye bas`, at: V(pad.x, 0, pad.z), y: 0.8 };
+  /* İlk birkaç alımda Yap menüsü hatırlatılır */
+  const buy = PADS.find(p => p.menu && itemReady(p) && S.money >= p.cost);
+  if (buy && PADS.filter(p => p.menu && S.unlocked[p.id]).length < 3) return { text: `${buy.name}: üstteki Yap'a dokun`, at: player.pos, y: 0 };
   for (let i = player.stack.length - 1; i >= 0; i--) {
     const type = player.stack[i].type, sh = shelves[type];
     if (sh.unlocked && !seen['stock:' + type]) return { text: `${PRODUCT[type].name} rafa diz`, at: sh.stand, y: 2.6 };
@@ -2221,19 +2609,24 @@ const base = $('stickBase'), knob = $('stickKnob');
 function hideStick() { base.hidden = knob.hidden = true; stick.x = stick.y = 0; }
 canvas.addEventListener('pointerdown', e => {
   unlockAudio(); canvas.focus({ preventScroll: true });
+  if (gameState === 'build') { buildDown(e); return; }
   stick.id = e.pointerId; stick.ox = e.clientX; stick.oy = e.clientY; stick.x = stick.y = 0;
   canvas.setPointerCapture(e.pointerId);
   base.hidden = knob.hidden = false;
   base.style.left = knob.style.left = e.clientX + 'px'; base.style.top = knob.style.top = e.clientY + 'px';
 });
 canvas.addEventListener('pointermove', e => {
+  if (gameState === 'build') { buildMove(e); return; }
   if (e.pointerId !== stick.id) return;
   let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy; const d = Math.hypot(dx, dy), max = 50;
   if (d > max) { dx *= max / d; dy *= max / d; }
   stick.x = dx / max; stick.y = -dy / max;
   knob.style.left = stick.ox + dx + 'px'; knob.style.top = stick.oy + dy + 'px';
 });
-function endStick(e) { if (e.pointerId === stick.id) { stick.id = null; hideStick(); } }
+function endStick(e) {
+  if (gameState === 'build') { buildUp(e); return; }
+  if (e.pointerId === stick.id) { stick.id = null; hideStick(); }
+}
 canvas.addEventListener('pointerup', endStick);
 canvas.addEventListener('pointercancel', endStick);
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -2310,6 +2703,7 @@ function updateHud() {
   const upBtn = $('upBtn');
   if (upBtn.hidden && (S.earned >= 150 || Object.keys(LV).length)) upBtn.hidden = false;
   if (!upBtn.hidden) upBtn.classList.toggle('ready', upAffordable());
+  $('buildBtn').classList.toggle('ready', buildAffordable());
   const brBtn = $('brBtn');
   brBtn.hidden = !S.unlocked.kasiyer;
   if (!brBtn.hidden) {
@@ -2320,7 +2714,7 @@ function updateHud() {
 
 /* ---------- Menüler ---------- */
 let gameState = 'menu';
-const PANELS = ['pMain', 'pPause', 'pHow', 'pSettings', 'pInstall', 'pStyle', 'pUpgrade', 'pOffline', 'pBranches', 'pBranch'];
+const PANELS = ['pMain', 'pPause', 'pHow', 'pSettings', 'pInstall', 'pStyle', 'pUpgrade', 'pOffline', 'pBranches', 'pBranch', 'pBuild'];
 function showPanel(id) {
   PANELS.forEach(p => { $(p).hidden = p !== id; });
   $('menu').scrollTop = 0;
@@ -2478,7 +2872,16 @@ const SAVE_KEY = 'kose-bakkal-v1';
 let noSave = false;
 function save() {
   if (noSave) return;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, hints: S.hints, shelves: S.shelves, br: S.br, lv: LV, rate: S.rate, lastSeen: Date.now(), refundNote: guardRefund, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money: S.money + pile.amount + (accountant ? accountant.carried : 0), earned: S.earned, unlocked: S.unlocked, sound: S.sound, quality: S.quality, done: S.done, rep: S.rep, style: S.style, owned: S.owned, hints: S.hints, shelves: S.shelves, br: S.br, layout: layoutSave(), lv: LV, rate: S.rate, lastSeen: Date.now(), refundNote: guardRefund, paid: PADS.reduce((o, p) => { if (p.paid > 0 && !S.unlocked[p.id]) o[p.id] = p.paid; return o; }, {}) })); } catch (e) { /* kayıt isteğe bağlı */ }
+}
+/* Yalnızca yeri değişen nesneler saklanır; taşıma yarıda kaldıysa eski yeri yazılır */
+function layoutSave() {
+  const o = {};
+  Object.values(PLACE).forEach(q => {
+    const s = build.p === q && build.orig ? build.orig : q;
+    if (s.x !== q.home.x || s.z !== q.home.z || s.r) o[q.key] = [s.x, s.z, s.r];
+  });
+  return o;
 }
 /* Kayıt dışarıdan değiştirilebilir: yalnızca geçerli değerler ve oyunda var olan seçenekler yüklenir */
 const clampNum = (v, max) => (Number.isFinite(v) ? Math.min(max, Math.max(0, v)) : 0);
@@ -2502,6 +2905,8 @@ function load() {
   /* PADS sırası gereksinim sırasıdır, ön koşulu olmayan açılım yüklenmez */
   PADS.forEach(p => {
     if (unlocked[p.id] === true && (p.req || []).every(r => S.unlocked[r])) { S.unlocked[p.id] = true; applyUnlock(p.id, false); }
+    /* Artık menüden alınan şeylere yerde yarım ödenmiş para geri verilir */
+    else if (p.menu && paid[p.id] > 0) S.money += Math.floor(clampNum(paid[p.id], p.cost - 1));
     else if (paid[p.id] > 0) { p.paid = clampNum(paid[p.id], p.cost - 1); p.fill.scale.y = p.paid / p.cost; p.fill.position.y = -1.36 + 1.36 * p.paid / p.cost; }
   });
   S.done = d.done === true && PADS.every(p => S.unlocked[p.id]);
@@ -2521,6 +2926,15 @@ function load() {
   UPS.forEach(u => {
     const n = Math.floor(clampNum(levels[u.id], u.max));
     if (n > 0 && upReady(u)) { LV[u.id] = n; applyUpgrade(u.id, n); }
+  });
+  /* Yerleşim: bilinen nesne, sayı ve 0-3 arası dönüş; harita dışı değerler yok sayılır */
+  const lay = asRecord(d.layout);
+  Object.keys(lay).forEach(k => {
+    const q = PLACE[k], v = lay[k];
+    if (!q || !Array.isArray(v) || v.length !== 3) return;
+    const [x, z, r] = v;
+    if (!Number.isFinite(x) || !Number.isFinite(z) || ![0, 1, 2, 3].includes(r) || Math.abs(x) > 50 || Math.abs(z) > 25) return;
+    placeAt(q, x, z, r);
   });
   /* Şubeler: sırayla ve ön koşulu açıksa yüklenir; kasa sınırı aşılamaz */
   const br = asRecord(d.br);
@@ -2586,7 +3000,7 @@ function watchFps(realDt) {
   fpsT = fpsN = 0;
 }
 function step(dt, time) {
-  tickDt = dt;
+  tickDt = dt; pathBudget = 4; /* karede en çok dört yol hesabı: telefonda takılma olmasın */
   movePlayer(dt);
   tryCollect(player);
   tryDeposit(player);
@@ -2616,7 +3030,7 @@ function step(dt, time) {
   if (accountant) { accountantAI(accountant, dt); updateActor(accountant, dt); }
   updatePads(dt);
   updateDoors(dt);
-  cow.position.x = 39.4 + Math.sin(time * 0.4) * 1.6;
+  cow.position.x = cowBase.x + Math.sin(time * 0.4) * 1.6;
   flock.forEach(f => {
     f.g.position.x = f.p[0] + Math.sin(time * 0.7 + f.i * 2) * 0.6;
     f.g.rotation.y = Math.cos(time * 0.7 + f.i * 2) > 0 ? 0 : Math.PI;
@@ -2633,12 +3047,18 @@ function frame(now) {
   const realDt = Math.max(0, (now - lastT) / 1000), dt = Math.min(0.05, realDt); lastT = now;
   const time = now / 1000;
   if (gameState === 'play') { step(dt, time); watchFps(realDt); }
+  else if (gameState === 'build') { updateItems(dt); updatePops(dt); updateBits(dt); }
   catBody.scale.y = 0.8 + Math.sin(time * 2) * 0.03;
   if (gameState === 'menu') {
     /* Ana menüde kamera dükkânın çevresinde yavaşça döner */
     const a = 0.5 + Math.sin(time * 0.1) * 0.75, r = 30 * menuScale;
     camTarget.set(Math.sin(a) * r, 19 * menuScale, 2 + Math.cos(a) * r);
     wantLook.set(0, 0.6, 2); camK = 1.5;
+    guide.visible = chevron.visible = false;
+  } else if (gameState === 'build') {
+    /* Yerleştirmede kamera biraz uzaklaşır ve seçilen noktaya bakar */
+    camTarget.copy(CAM).multiplyScalar(camScale * 1.35).add(build.focus);
+    wantLook.set(build.focus.x, 0.6, build.focus.z); camK = 6;
     guide.visible = chevron.visible = false;
   } else if (stylePreview) {
     /* Özelleştirme ekranında dükkân bütün görünsün */
@@ -2661,6 +3081,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 /* Test kancası yalnızca yerel geliştirmede açılır */
-if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, registers, PADS, helpers, step, get accountant() { return accountant; }, LV, UPS, buyUpgrade, price, offlineEarnings };
+if (location.hostname === 'localhost') window.__bakkal = { get state() { return gameState; }, S, player, pile, shelves, sources, customers, queue, registers, PADS, helpers, step, get accountant() { return accountant; }, LV, UPS, buyUpgrade, price, offlineEarnings, PLACE, placeAt, startPlace, startArrange, checkPlace, build, footOf, camera, canvas };
 })();
 </script>
