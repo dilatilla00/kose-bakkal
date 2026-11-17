@@ -1917,7 +1917,7 @@ $('shelfBtn').addEventListener('pointerdown', e => {
 /* ---------- Açılacak yerler ---------- */
 const S = {
   money: 0, earned: 0, unlocked: {}, sound: true, done: false, quality: 'high', walked: false, rep: 70, owned: {}, hints: {}, shelves: {}, br: {},
-  daily: { day: '', tasks: [], streak: 0, claim: '' }, adCool: {}, boostUntil: 0,
+  daily: { day: '', tasks: [], streak: 0, claim: '', rv: 2 }, adCool: {}, boostUntil: 0,
   style: { floor: 'nane', wall: '#f7e7c6', awning: '#e4472f', uniform: '#1f8a70', name: 'KÖŞE BAKKAL' },
 };
 const PADS = [
@@ -2596,11 +2596,17 @@ function rollDay() {
   const today = dayKey();
   if (S.daily.day === today) return false;
   const l = S.earned < 2000 ? 0 : S.earned < 20000 ? 1 : 2;
-  const base = Math.max(100, Math.round((S.rate || 0) * 300 / 10) * 10);
   const others = Object.keys(QUESTS).filter(k => k !== 'sell' && (!QUESTS[k].ok || QUESTS[k].ok())).sort(() => Math.random() - 0.5).slice(0, 2);
-  S.daily.day = today;
-  S.daily.tasks = ['sell'].concat(others).map((k, i) => ({ k, target: QUESTS[k].target(l), prog: 0, claimed: false, reward: Math.round(base * (1 + i * 0.5) / 10) * 10 }));
+  S.daily.day = today; S.daily.rv = QUEST_RV;
+  S.daily.tasks = ['sell'].concat(others).map((k, i) => ({ k, target: QUESTS[k].target(l), prog: 0, claimed: false, reward: questReward(i) }));
   return true;
+}
+/* Ödül, dükkânın kazanç hızına göre: görev başına yaklaşık 1,5-2 dakikalık kazanç.
+   Üç görevin toplamı ~5 dakika, reklamla ~10 dakika eder; oyun başında en az ₺30 */
+const QUEST_RV = 2;
+function questReward(i) {
+  const base = Math.max(30, (S.rate || 0) * 90);
+  return Math.round(base * [1, 1.15, 1.3][i] / 10) * 10;
 }
 function questEvent(k, n) {
   (S.daily.tasks || []).forEach(t => {
@@ -3180,12 +3186,15 @@ function load() {
     }));
   }
   if (isDay(dl.claim)) S.daily.claim = dl.claim;
+  S.daily.rv = dl.rv === QUEST_RV ? QUEST_RV : 0;
   S.daily.streak = Math.floor(clampNum(dl.streak, 7));
   /* Reklam bekleme süreleri ve çift kazanç ileriye en fazla izin verilen kadar uzanabilir */
   const ac = asRecord(d.adCool);
   Object.keys(ac).forEach(k => { if (/^br:[a-z]+$/.test(k) && Number.isFinite(ac[k])) S.adCool[k] = Math.min(ac[k], Date.now() + 30 * 60000); });
   if (Number.isFinite(d.boostUntil)) S.boostUntil = Math.min(d.boostUntil, Date.now() + BOOST_MAX_MIN * 60000);
   S.rate = clampNum(d.rate, 1e5);
+  /* Eski hesapla verilmiş, henüz alınmamış görev ödülleri yeni dengeye çekilir */
+  if (S.daily.rv !== QUEST_RV) { S.daily.tasks.forEach((t, i) => { if (!t.claimed) t.reward = Math.min(t.reward, questReward(i)); }); S.daily.rv = QUEST_RV; }
   /* Hırsız oyundan çıkarıldı: kapı güvenliğine ödenen para bir kez geri verilir */
   const fromGuard = unlocked.guvenlik === true ? 4000 : Math.floor(clampNum(paid.guvenlik, 4000));
   S.money += fromGuard;
