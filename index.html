@@ -628,7 +628,7 @@ function tree(x, z, s) {
   mesh(new THREE.SphereGeometry(0.95, 10, 8), leafMat, 0.8, 2.1, 0.3, g);
   mesh(new THREE.SphereGeometry(0.85, 10, 8), leafMat, -0.8, 2.2, -0.2, g);
 }
-[[-24, -7, 1.2], [-13, -18, 1], [13, -18, 1.15], [57, -8, 1], [-34, 7, 1.1], [24, 9.2, 1.2], [-19, 18, 1.1], [18, 19, 1], [34, 16, 1.2], [-34, 16, 1]]
+[[-24, -7, 1.2], [-13, -18, 1], [13, -18, 1.15], [57, -8, 1], [-34, 7, 1.1], [24, 9.2, 1.2], [-19, 18, 1.1], [36, 21, 1], [34, 16, 1.2], [-34, 16, 1]]
   .forEach(t => tree(t[0], t[1], t[2]));
 
 /* Arkadaki mahalle evleri */
@@ -742,19 +742,30 @@ const BUILD = {
     const g = new THREE.Group(); const c = mesh(G.cone, mat(0xd9a05b), 0, -0.1, 0, g); c.rotation.x = Math.PI;
     mesh(G.scoop, mat(0xfff3d6), 0, 0.08, 0, g); mesh(G.scoop2, mat(0xe87fb0), 0, 0.22, 0, g); return g;
   },
+  sampuan() {
+    /* Mor şişe, beyaz etiket, pompalı kapak */
+    const g = new THREE.Group(); box(0.26, 0.4, 0.16, mat(0x8b5fbf), 0, -0.02, 0, g);
+    box(0.27, 0.14, 0.17, M.white, 0, 0, 0, g); box(0.1, 0.08, 0.1, M.white, 0, 0.22, 0, g); box(0.16, 0.03, 0.04, M.white, 0.04, 0.27, 0, g); return g;
+  },
+  kolonya() {
+    /* Limon kolonyası: sarı yarı saydam şişe, altın kapak */
+    const g = new THREE.Group(); mesh(G.kolonya, mat(0xf5e27a), 0, -0.04, 0, g);
+    mesh(G.kolonyaNeck, mat(0xf5e27a), 0, 0.17, 0, g); mesh(G.kolonyaCap, M.mustard, 0, 0.25, 0, g); return g;
+  },
 };
 Object.assign(G, {
   elma: new THREE.SphereGeometry(0.21, 12, 10), twig: new THREE.CylinderGeometry(0.02, 0.02, 0.12, 5),
   simit: new THREE.TorusGeometry(0.2, 0.08, 8, 16), egg: new THREE.SphereGeometry(0.14, 12, 10),
   cone: new THREE.ConeGeometry(0.15, 0.32, 10), scoop: new THREE.SphereGeometry(0.16, 12, 10), scoop2: new THREE.SphereGeometry(0.13, 12, 10),
+  kolonya: new THREE.CylinderGeometry(0.15, 0.17, 0.34, 6), kolonyaNeck: new THREE.CylinderGeometry(0.05, 0.08, 0.08, 8), kolonyaCap: new THREE.CylinderGeometry(0.07, 0.07, 0.09, 10),
 });
-const HEIGHT = { karpuz: 0.56, domates: 0.38, ekmek: 0.32, ayran: 0.5, elma: 0.4, simit: 0.2, yumurta: 0.34, peynir: 0.3, sut: 0.5, gazoz: 0.5, meyve: 0.46, borek: 0.26, cips: 0.46, cikolata: 0.12, sabun: 0.2, deterjan: 0.5, dondurma: 0.5, bill: 0.09, poset: 0.5 };
+const HEIGHT = { karpuz: 0.56, domates: 0.38, ekmek: 0.32, ayran: 0.5, elma: 0.4, simit: 0.2, yumurta: 0.34, peynir: 0.3, sut: 0.5, gazoz: 0.5, meyve: 0.46, borek: 0.26, cips: 0.46, cikolata: 0.12, sabun: 0.2, deterjan: 0.5, dondurma: 0.5, sampuan: 0.5, kolonya: 0.46, bill: 0.09, poset: 0.5 };
 const PRODUCT = {
   karpuz: { name: 'Karpuz', price: 6 }, domates: { name: 'Domates', price: 9 }, ekmek: { name: 'Ekmek', price: 14 }, ayran: { name: 'Ayran', price: 20 },
   elma: { name: 'Elma', price: 16 }, simit: { name: 'Simit', price: 22 }, yumurta: { name: 'Yumurta', price: 30 }, peynir: { name: 'Peynir', price: 38 },
   sut: { name: 'Süt', price: 26 }, gazoz: { name: 'Gazoz', price: 34 }, meyve: { name: 'Meyve suyu', price: 42 }, borek: { name: 'Börek', price: 52 },
   cips: { name: 'Cips', price: 28 }, cikolata: { name: 'Çikolata', price: 36 }, sabun: { name: 'Sabun', price: 46 }, deterjan: { name: 'Deterjan', price: 60 },
-  dondurma: { name: 'Dondurma', price: 68 },
+  dondurma: { name: 'Dondurma', price: 68 }, sampuan: { name: 'Şampuan', price: 74 }, kolonya: { name: 'Kolonya', price: 82 },
 };
 /* Geliştirme seviyeleri (kayıtta saklanır): satış fiyatı "Zam yap" ile, çalışan hızı "Çalışan eğitimi" ile artar */
 const LV = {};
@@ -795,6 +806,8 @@ function drawIcon(g, type, x, y, r) {
   if (type === 'sabun') { g.fillStyle = '#e87fb0'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.85, y - r * 0.55, r * 1.7, r * 1.1, r * 0.4); g.fill(); g.stroke(); g.fillStyle = '#fffaf0'; [[-0.2, -0.75], [0.3, -0.9], [0.65, -0.65]].forEach(b => { g.beginPath(); g.arc(x + b[0] * r, y + b[1] * r, r * 0.17, 0, 7); g.fill(); }); }
   if (type === 'deterjan') { g.fillStyle = '#159e9a'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.55, y - r * 0.65, r * 1.1, r * 1.55, 6); g.fill(); g.stroke(); g.fillStyle = '#fffaf0'; g.fillRect(x - r * 0.53, y - r * 0.1, r * 1.06, r * 0.4); g.fillStyle = '#e4472f'; g.fillRect(x - r * 0.25, y - r * 0.95, r * 0.5, r * 0.3); }
   if (type === 'dondurma') { g.fillStyle = '#d9a05b'; g.strokeStyle = INK; g.lineWidth = 3; g.beginPath(); g.moveTo(x - r * 0.5, y); g.lineTo(x, y + r); g.lineTo(x + r * 0.5, y); g.closePath(); g.fill(); g.stroke(); g.fillStyle = '#fff3d6'; g.beginPath(); g.arc(x, y - r * 0.1, r * 0.52, 0, 7); g.fill(); g.stroke(); g.fillStyle = '#e87fb0'; g.beginPath(); g.arc(x, y - r * 0.62, r * 0.42, 0, 7); g.fill(); g.stroke(); }
+  if (type === 'sampuan') { g.fillStyle = '#8b5fbf'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.5, y - r * 0.6, r, r * 1.5, 7); g.fill(); g.stroke(); g.fillStyle = '#fffaf0'; g.fillRect(x - r * 0.48, y - r * 0.05, r * 0.96, r * 0.4); g.fillRect(x - r * 0.15, y - r * 0.92, r * 0.3, r * 0.32); g.fillRect(x - r * 0.15, y - r * 0.95, r * 0.55, r * 0.12); }
+  if (type === 'kolonya') { g.fillStyle = '#f5e27a'; g.strokeStyle = INK; g.lineWidth = 3; roundRect(g, x - r * 0.62, y - r * 0.4, r * 1.24, r * 1.3, 8); g.fill(); g.stroke(); g.fillStyle = '#f5b92e'; g.fillRect(x - r * 0.22, y - r * 0.92, r * 0.44, r * 0.5); g.strokeRect(x - r * 0.22, y - r * 0.92, r * 0.44, r * 0.5); g.fillStyle = '#3f9b5a'; g.beginPath(); g.ellipse(x, y + r * 0.25, r * 0.3, r * 0.2, 0, 0, 7); g.fill(); }
   if (type === 'kizgin') { g.fillStyle = '#e4472f'; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.strokeStyle = '#fffaf0'; g.lineWidth = r * 0.18; g.lineCap = 'round'; g.beginPath(); g.moveTo(x - r * 0.6, y - r * 0.5); g.lineTo(x - r * 0.15, y - r * 0.2); g.moveTo(x + r * 0.6, y - r * 0.5); g.lineTo(x + r * 0.15, y - r * 0.2); g.moveTo(x - r * 0.45, y + r * 0.55); g.quadraticCurveTo(x, y + r * 0.1, x + r * 0.45, y + r * 0.55); g.stroke(); }
   if (type === 'kasa') { g.fillStyle = '#7fd089'; g.strokeStyle = '#2f8a3e'; g.lineWidth = 5; roundRect(g, x - r, y - r * 0.6, r * 2, r * 1.2, 7); g.fill(); g.stroke(); g.fillStyle = '#1f6a31'; g.font = `800 ${r * 1.1}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('₺', x, y + 2); }
   if (type === 'kalp') { g.fillStyle = '#e4472f'; g.font = `800 ${r * 2}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('♥', x, y + 3); }
@@ -1222,8 +1235,9 @@ mesh(new THREE.SphereGeometry(0.48, 14, 12), mat(0xe87fb0), 0, 4.1, 0, gelato);
 
 /* Karşı sokaktaki toptancı: paketli ürünler gelir */
 const depot = new THREE.Group(); depot.visible = false; depot.position.set(0, 0, 19); scene.add(depot);
-const depotGround = new THREE.Mesh(new THREE.PlaneGeometry(34, 8.2), mat(0xc9a877));
-depotGround.rotation.x = -Math.PI / 2; depotGround.position.y = 0.035; depotGround.receiveShadow = true; depot.add(depotGround);
+/* Zemin x -17 ile 31 arası: doğu ucunda kozmetik depoları var */
+const depotGround = new THREE.Mesh(new THREE.PlaneGeometry(48, 8.2), mat(0xc9a877));
+depotGround.rotation.x = -Math.PI / 2; depotGround.position.set(7, 0.035, 0); depotGround.receiveShadow = true; depot.add(depotGround);
 [-1.5, 2.1].forEach(x => box(0.14, 3.2, 0.14, M.steel, x, 1.6, -3.8, depot));
 const depotSign = canvasTex(320, 80, (g, w, h) => {
   g.fillStyle = '#2c3e6b'; roundRect(g, 3, 3, w - 6, h - 6, 14); g.fill();
@@ -1243,6 +1257,8 @@ wholesale('cips', -12, 6, 0xf5b92e);
 wholesale('cikolata', -4, 6.5, 0x8a5a33);
 wholesale('sabun', 4, 7.5, 0xe87fb0);
 wholesale('deterjan', 12, 8.5, 0x2c6fbb);
+wholesale('sampuan', 20, 9, 0x8b5fbf);
+wholesale('kolonya', 28, 9.5, 0xf5b92e);
 
 function makeShelf(type, x, sz, cold) {
   const g = new THREE.Group(); g.visible = false; g.position.set(x, 0, sz); scene.add(g);
@@ -1277,6 +1293,8 @@ makeShelf('sut', -6.5, -14, true); makeShelf('gazoz', -2.15, -14, true); makeShe
 makeShelf('cips', -7.2, -9); makeShelf('cikolata', -3, -9); makeShelf('sabun', 1.2, -9); makeShelf('deterjan', 5.4, -9);
 /* Dondurma dolabı arka salonun sağ köşesinde, yüzü salona dönük başlar; oyuncu istediği yere taşır */
 makeShelf('dondurma', 8.75, -11.75, true);
+/* Kozmetik rafları arka salonun sol duvarında, yüzü salona dönük başlar */
+makeShelf('sampuan', -8.75, -11.75); makeShelf('kolonya', -8.75, -6.75);
 
 /* Kasa: aynı model ikinci kasa için de kurulur */
 const REG = V(4.9, 0, 2.7);
@@ -1636,6 +1654,7 @@ function placeAt(p, x, z, r) {
 const footOf = p => rotRect(p.foot, p.x, p.z, p.r);
 Object.values(shelves).forEach(sh => registerPlace('shelf', sh));
 placeAt(PLACE['shelf:dondurma'], 8.75, -11.75, 3);
+placeAt(PLACE['shelf:sampuan'], -8.75, -11.75, 1); placeAt(PLACE['shelf:kolonya'], -8.75, -6.75, 1);
 Object.values(sources).forEach(src => registerPlace('src', src,
   src.type === 'yumurta' ? flock.map(f => ({ x: f.p[0], z: f.p[1], set(x, z) { f.p[0] = x; f.p[1] = z; f.g.position.set(x, 0, z); } }))
     : src.type === 'sut' ? [{ x: cowBase.x, z: cowBase.z, set(x, z) { cowBase.x = x; cowBase.z = z; cow.position.z = z; } }] : []));
@@ -2006,6 +2025,10 @@ const PADS = [
   { id: 'deterjanRaf', name: 'Deterjan rafı', cost: 1500, x: 5.4, z: -7.4, req: ['deterjanKoli'] },
   { id: 'dondurmaMak', name: 'Dondurma makinesi', cost: 2800, x: 51, z: -2.6, req: ['deterjanRaf', 'avlu'] },
   { id: 'dondurmaDolap', name: 'Dondurma dolabı', cost: 1800, x: 8.75, z: -11.75, req: ['dondurmaMak'] },
+  { id: 'sampuanKoli', name: 'Şampuan deposu', cost: 3000, x: 20, z: 19.6, req: ['dondurmaDolap', 'depo'] },
+  { id: 'sampuanRaf', name: 'Şampuan rafı', cost: 1900, x: -8.75, z: -11.75, req: ['sampuanKoli'] },
+  { id: 'kolonyaKoli', name: 'Kolonya deposu', cost: 3400, x: 28, z: 19.6, req: ['sampuanRaf'] },
+  { id: 'kolonyaRaf', name: 'Kolonya rafı', cost: 2100, x: -8.75, z: -6.75, req: ['kolonyaKoli'] },
   { id: 'cirak7', name: 'Yedinci toplayıcı', cost: 3400, x: 6.6, z: 11.2, req: ['deterjanRaf', 'cirak6'] },
 ];
 /* Raflar ve üretim yerleri yerdeki karelerden değil Yap menüsünden alınır, yerini oyuncu seçer */
@@ -2013,11 +2036,11 @@ const MENU_OBJ = {
   domRaf: 'shelf:domates', ekmekRaf: 'shelf:ekmek', ayranRaf: 'shelf:ayran', elmaRaf: 'shelf:elma', simitRaf: 'shelf:simit',
   yumurtaRaf: 'shelf:yumurta', peynirRaf: 'shelf:peynir', sutDolap: 'shelf:sut', gazozDolap: 'shelf:gazoz', meyveDolap: 'shelf:meyve',
   borekRaf: 'shelf:borek', cipsRaf: 'shelf:cips', cikoRaf: 'shelf:cikolata', sabunRaf: 'shelf:sabun', deterjanRaf: 'shelf:deterjan',
-  dondurmaDolap: 'shelf:dondurma',
+  dondurmaDolap: 'shelf:dondurma', sampuanRaf: 'shelf:sampuan', kolonyaRaf: 'shelf:kolonya',
   domTarla: 'src:domates', firin: 'src:ekmek', ayranHane: 'src:ayran', elmaBahce: 'src:elma', simitAraba: 'src:simit',
   kumes: 'src:yumurta', mandira: 'src:peynir', ahir: 'src:sut', gazozMak: 'src:gazoz', sikma: 'src:meyve',
   borekFirin: 'src:borek', cipsKoli: 'src:cips', cikoKoli: 'src:cikolata', sabunKoli: 'src:sabun', deterjanKoli: 'src:deterjan',
-  dondurmaMak: 'src:dondurma',
+  dondurmaMak: 'src:dondurma', sampuanKoli: 'src:sampuan', kolonyaKoli: 'src:kolonya',
 };
 PADS.forEach(p => { if (MENU_OBJ[p.id]) { p.obj = MENU_OBJ[p.id]; p.menu = p.obj.split(':')[0]; } });
 /* Fiyatlar sıraya göre kademeli artar: öğretici ilk adımlar ucuz kalır, ilerledikçe pahalanır */
@@ -2086,6 +2109,10 @@ function applyUnlock(id, anim) {
     case 'deterjanRaf': openShelf('deterjan', anim); break;
     case 'dondurmaMak': openSource('dondurma', anim); break;
     case 'dondurmaDolap': openShelf('dondurma', anim); break;
+    case 'sampuanKoli': openSource('sampuan', anim); break;
+    case 'sampuanRaf': openShelf('sampuan', anim); break;
+    case 'kolonyaKoli': openSource('kolonya', anim); break;
+    case 'kolonyaRaf': openShelf('kolonya', anim); break;
     case 'kasa2':
       registers[1].open = true; reveal(till2Group, anim); solids.push(...till2Solids);
       if (anim) player.pos.z = 5.3; /* satın alma karesi tezgâhın altında kalır */
@@ -2411,7 +2438,7 @@ const SHELF_ZONE = () => ({ x0: -10, x1: 10, z0: annexOpen ? -15.1 : -5.1, z1: 2
 function prodZones() {
   /* Arka kenar çatıların taşmasına izin verir; yürünen alan yine -4,6'da biter */
   const z = [{ x0: -32, x1: -10.8, z0: -7, z1: 9.2 }, { x0: 10.8, x1: yardOpen ? 55 : 30.4, z0: -7, z1: 9.2 }];
-  if (depotOpen) z.push({ x0: -17.2, x1: 17.2, z0: 15.2, z1: 21.6 });
+  if (depotOpen) z.push({ x0: -17.2, x1: 31.2, z0: 15.2, z1: 21.6 });
   return z;
 }
 const SAFE_ZONE = { x0: 7.2, x1: 10.4, z0: -1.4, z1: 2.7 }; /* muhasebecinin kasası ve yolu */
