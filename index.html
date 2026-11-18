@@ -761,7 +761,12 @@ const ZOR = {
   branch: 1.6,       /* şube açma fiyat çarpanı */
   brUpGrowth: 1.85,  /* şube geliştirme fiyatı her seviyede bu kadar katlanır (eskiden 1,7) */
   gift: 200,         /* günlük hediye: dükkânın kaç saniyelik kazancı kadar (eskiden 360) */
+  offEff: 0.2,       /* sen yokken, toplayıcı varsa normal kazancın bu kadarı (eskiden 0,5) */
+  offEffSolo: 0.1,   /* sen yokken, yalnız kasiyer varsa (eskiden 0,25) */
+  offBaseH: 1,       /* sen yokken kaç saat kazanılır: başlangıç */
+  offPerLvH: 0.5,    /* Gece vardiyası her seviyede bu kadar saat ekler (eskiden 1); şube kasası da bu süre kadar dolar */
 };
+const offHours = n => ZOR.offBaseH + ZOR.offPerLvH * (n === undefined ? lv('mesai') : n);
 const price = type => Math.round(PRODUCT[type].price * (1 + ZOR.zam * lv('fiyat')));
 const staffMult = () => 1 + 0.12 * lv('personel');
 
@@ -1850,7 +1855,7 @@ function updateRegister(reg, dt) {
     head.belt = head.stack.splice(0);
     head.total = head.belt.reduce((sum, it) => sum + price(it.type), 0);
     if (S.rep >= 80) head.total = Math.round(head.total * 1.15); /* memnun müşteri bahşiş bırakır */
-    head.total *= boostMult(); /* reklamla açılan çift kazanç */
+    head.boost = boostMult(); head.total *= head.boost; /* reklamla açılan çift kazanç */
     const gap = Math.min(0.42, 1.2 / head.belt.length);
     head.belt.forEach((it, i) => { it.t.set(dx + 3.4 + i * gap, 1.18 + HEIGHT[it.type] / 2, 4.22); it.k = 9; it.arc = 0.3; });
     till.setDisplay('₺' + head.total);
@@ -1870,6 +1875,8 @@ function updateRegister(reg, dt) {
   head.stack.push(spawnItem('poset', V(dx + 4.9, 1.3, 4.6)));
   addToPile(head.total, V(dx + 6.15, 1.4, 3.7));
   S.earned += head.total;
+  /* Çift kazancın fazlası kazanç hızına sayılmaz: sen yokken kazanç reklamla şişmesin */
+  if (head.boost > 1) rateE += head.total * (1 - 1 / head.boost);
   questEvent('sell', 1); questEvent('earn', head.total);
   head.state = 'out'; head.heartT = 1.2; head.exitX = rnd(3, 9); head.mood = 'kalp';
   markHint('register');
@@ -2073,7 +2080,7 @@ const UPS = [
   { id: 'sepet', name: 'Büyük sepet', base: 230, max: 10, info: n => `Sepete +${n} ürün sığar` },
   { id: 'yuruyus', name: 'Spor ayakkabı', base: 130, max: 10, info: n => `%${6 * n} daha hızlı yürürsün` },
   { id: 'personel', name: 'Çalışan eğitimi', base: 390, max: 15, req: 'kasiyer', info: n => `Çalışanlar %${12 * n} daha hızlı` },
-  { id: 'mesai', name: 'Gece vardiyası', base: 520, max: 11, req: 'kasiyer', info: n => `Sen yokken ${1 + n} saate kadar kazanırsın` },
+  { id: 'mesai', name: 'Gece vardiyası', base: 520, max: 11, req: 'kasiyer', info: n => `Sen yokken ${String(offHours(n)).replace('.', ',')} saate kadar kazanırsın` },
   { id: 'tasima', name: 'Toplayıcı kasası', base: 450, max: 8, req: 'cirak', lockText: 'Toplayıcıyla açılır', info: n => `Toplayıcılar ${helperCap(n)} ürün taşır` },
 ];
 /* Toplayıcı taşıma kapasitesi: 4 ürünle başlar, her seviye +2 */
@@ -2130,8 +2137,8 @@ let offlinePending = 0;
 function offlineEarnings(ms) {
   const sec = ms / 1000;
   if (!S.unlocked.kasiyer || !(sec >= 60) || !(S.rate > 0)) return 0;
-  const capSec = (1 + lv('mesai')) * 3600;
-  const eff = helpers.length ? 0.5 : 0.25;
+  const capSec = offHours() * 3600;
+  const eff = helpers.length ? ZOR.offEff : ZOR.offEffSolo;
   return Math.floor(S.rate * Math.min(sec, capSec) * eff);
 }
 let loadAway = 0, offBranch = false, offShown = 0, offExtra = 0;
@@ -2166,7 +2173,7 @@ const BR_UPS = [
 const brLv = (st, id) => st.lv[id] || 0;
 const brRate = b => { const st = S.br[b.id]; return st ? b.base * BR_UPS.reduce((m, u) => m * (1 + u.k * brLv(st, u.id)), 1) : 0; };
 /* Şube kasası, gece vardiyası süresi kadar dolar; sonra durur, toplanmayı bekler */
-const brCapSec = () => (1 + lv('mesai')) * 3600;
+const brCapSec = () => offHours() * 3600;
 const brCap = b => brRate(b) * brCapSec();
 const brReady = (b, i) => !!S.unlocked[b.req] && (i === 0 || !!S.br[BRANCHES[i - 1].id]);
 BRANCHES.forEach(b => { b.cost = Math.round(b.cost * ZOR.branch / 100) * 100; });
@@ -2305,7 +2312,7 @@ function refreshBranch() {
   const b = brCur; brAccrue(b, Date.now());
   $('brRate').textContent = `${perHour(brRate(b))} · Kasada ${fmt(S.br[b.id].till)}`;
   $('brMoney').textContent = fmt(S.money);
-  const h = 1 + lv('mesai');
+  const h = String(offHours()).replace('.', ',');
   $('brCapNote').textContent = `Kasa ${h} saatte dolar, sonra durur. Gece vardiyası bu süreyi uzatır.`;
   /* Reklamla kasa hemen dolar; her şube için yarım saatte bir */
   const ad = $('btnBrAd'), wait = adLeft('br:' + b.id), full = S.br[b.id].till >= brCap(b) - 0.5;
