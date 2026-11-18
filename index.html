@@ -1542,9 +1542,10 @@ const safeSolid = { x0: 8.55, x1: 10.05, z0: -1.15, z1: 0.35 };
 
 /* Arka salon: satın alınınca duvarda geçit açılır */
 const annex = new THREE.Group(); annex.visible = false; annex.position.set(0, 0, -10.2); scene.add(annex);
-const annexFloor = new THREE.Mesh(new THREE.PlaneGeometry(20, 10.2), new THREE.MeshLambertMaterial({ map: annexFloorTex }));
-annexFloor.rotation.x = -Math.PI / 2; annexFloor.position.y = 0.02; annexFloor.receiveShadow = true; annex.add(annexFloor);
-const annexFloorBase = box(20.4, 0.1, 10.6, M.kerb, 0, -0.04, 0, annex); annexFloorBase.castShadow = false;
+/* Zemin dükkân zemininin bittiği yerden (z -5,6) başlar: üst üste binerse duvarın kalktığı çizgide titreşir */
+const annexFloor = new THREE.Mesh(new THREE.PlaneGeometry(20, 9.7), new THREE.MeshLambertMaterial({ map: annexFloorTex }));
+annexFloor.rotation.x = -Math.PI / 2; annexFloor.position.set(0, 0.02, -0.25); annexFloor.receiveShadow = true; annex.add(annexFloor);
+const annexFloorBase = box(20.4, 0.1, 9.7, M.kerb, 0, -0.04, -0.45, annex); annexFloorBase.castShadow = false;
 box(20.4, 3.2, 0.4, M.wall, 0, 1.6, -5.3, annex);
 const annexWest = box(0.4, 3.2, 10.2, M.wall, -10.1, 1.6, 0, annex);
 const annexEast = box(0.06, 2.6, 9.8, glassMat, 10.1, 1.85, 0, annex); annexEast.castShadow = false;
