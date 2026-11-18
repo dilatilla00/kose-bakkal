@@ -778,7 +778,14 @@ const ZOR = {
   shelf: 1.6,        /* raf ve dolap genişletme fiyat çarpanı */
   branch: 1.6,       /* şube açma fiyat çarpanı */
   brUpGrowth: 1.85,  /* şube geliştirme fiyatı her seviyede bu kadar katlanır (eskiden 1,7) */
-  gift: 200,         /* günlük hediye: dükkânın kaç saniyelik kazancı kadar (eskiden 360) */
+  gift: 120,         /* günlük hediye: dükkânın kaç saniyelik kazancı kadar (eskiden 200, önce 360) */
+  giftMin: 50,       /* günlük hediyenin en azı: oyun başında (eskiden 100) */
+  giftDays: [1, 1.25, 1.5, 1.75, 2, 2.5, 4], /* art arda günlerin çarpanı (eskiden 1-1,5-2-2,5-3-4-6) */
+  quest: 60,         /* görev ödülü: dükkânın kaç saniyelik kazancı kadar (eskiden 90) */
+  questMin: 20,      /* görev ödülünün en azı (eskiden 30) */
+  boostPerDay: 3,    /* günde en fazla kaç kez reklamla çift kazanç alınır (eskiden sınırsız) */
+  boostMaxMin: 15,   /* çift kazanç en fazla kaç dakika birikir (eskiden 30) */
+  brAdMin: 60,       /* şube kasasını reklamla doldurma bekleme süresi, dakika (eskiden 30) */
   offEff: 0.2,       /* sen yokken, toplayıcı varsa normal kazancın bu kadarı (eskiden 0,5) */
   offEffSolo: 0.1,   /* sen yokken, yalnız kasiyer varsa (eskiden 0,25) */
   offBaseH: 1,       /* sen yokken kaç saat kazanılır: başlangıç */
@@ -2368,7 +2375,7 @@ function refreshBranch() {
   $('brMoney').textContent = fmt(S.money);
   const h = String(offHours()).replace('.', ',');
   $('brCapNote').textContent = `Kasa ${h} saatte dolar, sonra durur. Gece vardiyası bu süreyi uzatır.`;
-  /* Reklamla kasa hemen dolar; her şube için yarım saatte bir */
+  /* Reklamla kasa hemen dolar; her şube için ZOR.brAdMin dakikada bir */
   const ad = $('btnBrAd'), wait = adLeft('br:' + b.id), full = S.br[b.id].till >= brCap(b) - 0.5;
   ad.disabled = wait > 0 || full;
   ad.textContent = wait > 0 ? `▶ Kasa doldurma ${fmtClock(wait)} sonra` : full ? 'Kasa zaten dolu' : `▶ Reklam izle: kasayı doldur (+${fmt(brCap(b) - S.br[b.id].till)})`;
@@ -2376,7 +2383,7 @@ function refreshBranch() {
 $('btnBrAd').addEventListener('click', async () => {
   const b = brCur; if (!b || adLeft('br:' + b.id) > 0) return;
   if (!(await showRewardedAd())) return;
-  brAccrue(b, Date.now()); S.br[b.id].till = brCap(b); S.adCool['br:' + b.id] = Date.now() + 30 * 60000;
+  brAccrue(b, Date.now()); S.br[b.id].till = brCap(b); S.adCool['br:' + b.id] = Date.now() + ZOR.brAdMin * 60000;
   rewardSfx(); save(); refreshBranch();
 });
 setInterval(() => {
@@ -2640,17 +2647,21 @@ function rewardSfx() { sfx(990, 0.08); sfx(1240, 0.08, 0.06); sfx(1480, 0.1, 0.1
 /* Ödül parası kazanç sayılır ama kazanç hızı ortalamasını şişirmez */
 function giveMoney(x) { S.money += x; S.earned += x; rateE += x; }
 
-/* Çift kazanç: reklam başına 5 dakika, en fazla 30 dakika birikir; dükkân satışlarına uygulanır */
-const BOOST_MIN = 5, BOOST_MAX_MIN = 30;
+/* Çift kazanç: reklam başına 5 dakika, günde en fazla ZOR.boostPerDay kez; dükkân satışlarına uygulanır */
+const BOOST_MIN = 5, BOOST_MAX_MIN = ZOR.boostMaxMin;
+const boostUsed = () => (S.daily.boostDay === dayKey() ? S.daily.boostN || 0 : 0);
 const boostLeft = () => Math.max(0, (S.boostUntil || 0) - Date.now());
 const boostMult = () => (boostLeft() > 0 ? 2 : 1);
 function syncBoostBtn() {
   const b = $('btnBoost'), left = boostLeft();
-  b.disabled = left > (BOOST_MAX_MIN - BOOST_MIN) * 60000;
-  b.textContent = left > 0 ? `▶ +5 dakika ekle · ×2 kalan ${fmtClock(left)}` : '▶ Reklam izle: 5 dakika çift kazanç';
+  const rest = ZOR.boostPerDay - boostUsed();
+  b.disabled = rest <= 0 || left > (BOOST_MAX_MIN - BOOST_MIN) * 60000;
+  b.textContent = rest <= 0 ? (left > 0 ? `×2 kalan ${fmtClock(left)} · bugünlük hakkın bitti` : 'Çift kazanç hakkın yarın yenilenir')
+    : left > 0 ? `▶ +5 dakika ekle · ×2 kalan ${fmtClock(left)} · ${rest} hak` : `▶ Reklam izle: 5 dakika çift kazanç · ${rest} hak`;
 }
 $('btnBoost').addEventListener('click', async () => {
-  if (!(await showRewardedAd())) return;
+  if (boostUsed() >= ZOR.boostPerDay || !(await showRewardedAd())) return;
+  S.daily.boostN = boostUsed() + 1; S.daily.boostDay = dayKey();
   S.boostUntil = Math.max(Date.now(), S.boostUntil || 0) + BOOST_MIN * 60000;
   rewardSfx(); save(); syncBoostBtn(); updateHud();
 });
@@ -2675,11 +2686,11 @@ function rollDay() {
   S.daily.tasks = ['sell'].concat(others).map((k, i) => ({ k, target: QUESTS[k].target(l), prog: 0, claimed: false, reward: questReward(i) }));
   return true;
 }
-/* Ödül, dükkânın kazanç hızına göre: görev başına yaklaşık 1,5-2 dakikalık kazanç.
-   Üç görevin toplamı ~5 dakika, reklamla ~10 dakika eder; oyun başında en az ₺30 */
-const QUEST_RV = 2;
+/* Ödül, dükkânın kazanç hızına göre: görev başına yaklaşık 1-1,3 dakikalık kazanç.
+   Üç görevin toplamı ~3,5 dakika, reklamla ~7 dakika eder; oyun başında en az ₺20 */
+const QUEST_RV = 3;
 function questReward(i) {
-  const base = Math.max(30, (S.rate || 0) * 90);
+  const base = Math.max(ZOR.questMin, (S.rate || 0) * ZOR.quest);
   return Math.round(base * [1, 1.15, 1.3][i] / 10) * 10;
 }
 function questEvent(k, n) {
@@ -2724,10 +2735,10 @@ $('questBtn').addEventListener('click', () => { if (gameState !== 'play') return
 $('btnQClose').addEventListener('click', play);
 
 /* ---------- Günlük hediye: art arda gelinen her gün büyür, 7. gün en büyüğü; bir gün kaçarsa baştan başlar ---------- */
-const DAY_MULT = [1, 1.5, 2, 2.5, 3, 4, 6];
+const DAY_MULT = ZOR.giftDays;
 const dailyDue = () => S.earned > 0 && S.daily.claim !== dayKey();
 const nextStreak = () => (S.daily.claim === dayKey(Date.now() - 864e5) ? (S.daily.streak % 7) + 1 : 1);
-const dayBase = () => Math.max(100, Math.round((S.rate || 0) * ZOR.gift / 10) * 10);
+const dayBase = () => Math.max(ZOR.giftMin, Math.round((S.rate || 0) * ZOR.gift / 10) * 10);
 const dayGiftOf = n => Math.round(dayBase() * DAY_MULT[n - 1] / 10) * 10;
 function renderDaily() {
   const n = nextStreak(), grid = $('dayGrid'); grid.textContent = '';
@@ -3262,9 +3273,10 @@ function load() {
   if (isDay(dl.claim)) S.daily.claim = dl.claim;
   S.daily.rv = dl.rv === QUEST_RV ? QUEST_RV : 0;
   S.daily.streak = Math.floor(clampNum(dl.streak, 7));
+  if (isDay(dl.boostDay)) { S.daily.boostDay = dl.boostDay; S.daily.boostN = Math.floor(clampNum(dl.boostN, ZOR.boostPerDay)); }
   /* Reklam bekleme süreleri ve çift kazanç ileriye en fazla izin verilen kadar uzanabilir */
   const ac = asRecord(d.adCool);
-  Object.keys(ac).forEach(k => { if (/^br:[a-z]+$/.test(k) && Number.isFinite(ac[k])) S.adCool[k] = Math.min(ac[k], Date.now() + 30 * 60000); });
+  Object.keys(ac).forEach(k => { if (/^br:[a-z]+$/.test(k) && Number.isFinite(ac[k])) S.adCool[k] = Math.min(ac[k], Date.now() + ZOR.brAdMin * 60000); });
   if (Number.isFinite(d.boostUntil)) S.boostUntil = Math.min(d.boostUntil, Date.now() + BOOST_MAX_MIN * 60000);
   S.rate = clampNum(d.rate, 1e5);
   /* Eski hesapla verilmiş, henüz alınmamış görev ödülleri yeni dengeye çekilir */
